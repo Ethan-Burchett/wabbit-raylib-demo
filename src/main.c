@@ -1,87 +1,126 @@
-/*
-Raylib example file.
-This is an example main file for a simple raylib project.
-Use this as a starting point or replace it with your code.
-
-For a C++ project simply rename the file to .cpp and re-run the build script 
-
--- Copyright (c) 2020-2024 Jeffery Myers
---
---This software is provided "as-is", without any express or implied warranty. In no event 
---will the authors be held liable for any damages arising from the use of this software.
-
---Permission is granted to anyone to use this software for any purpose, including commercial 
---applications, and to alter it and redistribute it freely, subject to the following restrictions:
-
---  1. The origin of this software must not be misrepresented; you must not claim that you 
---  wrote the original software. If you use this software in a product, an acknowledgment 
---  in the product documentation would be appreciated but is not required.
---
---  2. Altered source versions must be plainly marked as such, and must not be misrepresented
---  as being the original software.
---
---  3. This notice may not be removed or altered from any source distribution.
-
-*/
+/*******************************************************************************************
+*
+*   raylib [textures] example - sprite explosion
+*
+*   Example originally created with raylib 2.5, last time updated with raylib 3.5
+*
+*   Example licensed under an unmodified zlib/libpng license, which is an OSI-certified,
+*   BSD-like license that allows static linking with closed source software
+*
+*   Copyright (c) 2019-2024 Anata and Ramon Santamaria (@raysan5)
+*
+********************************************************************************************/
 
 #include "raylib.h"
 
-#include "resource_dir.h"	// utility header for SearchAndSetResourceDir
+#define NUM_FRAMES_PER_LINE     3
+#define NUM_LINES               4
 
-int main ()
+//------------------------------------------------------------------------------------
+// Program main entry point
+//------------------------------------------------------------------------------------
+int main(void)
 {
-	const int screenWidth = 1200;
-    const int screenHeight = 800;
+    // Initialization
+    //--------------------------------------------------------------------------------------
+    const int screenWidth = 800;
+    const int screenHeight = 450;
 
-	// Tell the window to use vysnc and work on high DPI displays
-	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
+    InitWindow(screenWidth, screenHeight, "raylib [textures] example - sprite explosion");
 
-	// Create the window and OpenGL context
-	InitWindow(screenWidth, screenHeight, "Hello Raylib");
+    InitAudioDevice();
 
-	Vector2 chungusPosition = { (float)screenWidth/2, (float)screenHeight/2 };
+    // Load explosion sound
+    // Sound fxBoom = LoadSound("resources/boom.wav");
 
-	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
-	SearchAndSetResourceDir("resources");
-	SetTargetFPS(60);  
+    // Texture wabbit = LoadTexture("Big-Chungus-PNG.png");
+    // Load explosion texture
+    Texture2D explosion = LoadTexture("/Users/eth/dev/raylib/raylib-quickstart-my-game/resources/chungus-sprite.png");
 
-	// Load a texture from the resources directory
-	Texture wabbit = LoadTexture("Big-Chungus-PNG.png");
-	
-	// game loop
-	while (!WindowShouldClose())		// run the loop untill the user presses ESCAPE or presses the Close button on the window
-	{
+    // Init variables for animation
+    float frameWidth = (float)(explosion.width/NUM_FRAMES_PER_LINE);   // Sprite one frame rectangle width
+    float frameHeight = (float)(explosion.height/NUM_LINES);           // Sprite one frame rectangle height
+    int currentFrame = 0;
+    int currentLine = 0;
 
-		// Update
+    Rectangle frameRec = { 0, 0, frameWidth, frameHeight };
+    Vector2 position = { 0.0f, 0.0f };
+
+    bool active = false;
+    int framesCounter = 0;
+
+    SetTargetFPS(20);               // Set our game to run at 60 frames-per-second
+    //---------------------------------------------------------------------------------------
+
+    // Main game loop
+    while (!WindowShouldClose())    // Detect window close button or ESC key
+    {
+        // Update
         //----------------------------------------------------------------------------------
-        if (IsKeyDown(KEY_RIGHT)) chungusPosition.x += 2.0f;
-        if (IsKeyDown(KEY_LEFT)) chungusPosition.x -= 2.0f;
-        if (IsKeyDown(KEY_UP)) chungusPosition.y -= 2.0f;
-        if (IsKeyDown(KEY_DOWN)) chungusPosition.y += 2.0f;
 
+        // Check for mouse button pressed and activate explosion (if not active)
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !active)
+        {
+            position = GetMousePosition();
+            active = true;
 
-		// drawing
-		BeginDrawing();
+            position.x -= frameWidth/2.0f;
+            position.y -= frameHeight/2.0f;
 
+            // PlaySound(fxBoom);
+        }
 
-		// Setup the backbuffer for drawing (clear color and depth buffers)
-		ClearBackground(BLACK);
+        // Compute explosion animation frames
+        if (active)
+        {
+            framesCounter++;
 
-		// draw some text using the default font
-		DrawText("hello beautiful wabbit", 150,200,20,RED);
+            if (framesCounter > 2)
+            {
+                currentFrame++;
 
-		// draw our texture to the screen
-		DrawTexture(wabbit, chungusPosition.x, chungusPosition.y, WHITE);
-		
-		// end the frame and get ready for the next one  (display frame, poll input, etc...)
-		EndDrawing();
-	}
+                if (currentFrame >= NUM_FRAMES_PER_LINE)
+                {
+                    currentFrame = 0;
+                    currentLine++;
 
-	// cleanup
-	// unload our texture so it can be cleaned up
-	UnloadTexture(wabbit);
+                    if (currentLine >= NUM_LINES)
+                    {
+                        currentLine = 0;
+                        active = false;
+                    }
+                }
 
-	// destory the window and cleanup the OpenGL context
-	CloseWindow();
-	return 0;
+                framesCounter = 0;
+            }
+        }
+
+        frameRec.x = frameWidth*currentFrame;
+        frameRec.y = frameHeight*currentLine;
+        //----------------------------------------------------------------------------------
+
+        // Draw
+        //----------------------------------------------------------------------------------
+        BeginDrawing();
+
+            ClearBackground(RAYWHITE);
+
+            // Draw explosion required frame rectangle
+            if (active) DrawTextureRec(explosion, frameRec, position, WHITE);
+
+        EndDrawing();
+        //----------------------------------------------------------------------------------
+    }
+
+    // De-Initialization
+    //--------------------------------------------------------------------------------------
+    UnloadTexture(explosion);   // Unload texture
+    // UnloadSound(fxBoom);        // Unload sound
+
+    CloseAudioDevice();
+
+    CloseWindow();              // Close window and OpenGL context
+    //--------------------------------------------------------------------------------------
+
+    return 0;
 }

@@ -66,16 +66,22 @@ int main()
 		//----------------------------------------------------------------------------------
 		if (IsKeyDown(KEY_RIGHT))
 		{
-			chungusPosition.x += 6.0f;
+			if (chungusPosition.x <= screenWidth - 150)
+			{
+				chungusPosition.x += 20.0f;
+			}
 		}
 		if (IsKeyDown(KEY_LEFT))
 		{
-			chungusPosition.x -= 6.0f;
+			if (chungusPosition.x >= 0)
+			{
+				chungusPosition.x -= 20.0f;
+			}
 		}
 
 		if (IsKeyPressed(KEY_ENTER))
 		{
-		
+
 			restartGame();
 		}
 
@@ -84,7 +90,7 @@ int main()
 			projectilePosition.x = chungusPosition.x + 58;
 			projectilePosition.y = chungusPosition.y;
 		}
-	
+
 		// Update chungus on end screen
 		if (gameOver)
 		{

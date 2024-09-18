@@ -1,15 +1,35 @@
 
 #include "raylib.h"
+#include "stdio.h"
 
 #include "resource_dir.h" // utility header for SearchAndSetResourceDir
 
 #define NUM_FRAMES_PER_LINE 3
 #define NUM_LINES 4
 
+// Globals -------------------------------------------------------------
+const int screenWidth = 1200;
+const int screenHeight = 800;
+
+// Position
+Vector2 wabbitPosition = {60, 1000}; //{(float)screenWidth / 2, (float)screenHeight / 2};
+Vector2 chungusPosition = {(screenWidth / 2) - 50, 600};
+
+// Game State
+bool gameOver = false;
+
+
+void restartGame()
+{
+	gameOver = true;
+	wabbitPosition.y = 1000;
+	chungusPosition.x = 550; //(screenWidth / 2) - 50;
+}
+
+
+
 int main()
 {
-	const int screenWidth = 1200;
-	const int screenHeight = 800;
 
 	// Tell the window to use vysnc and work on high DPI displays
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
@@ -23,8 +43,7 @@ int main()
 
 	// Init variables for animation
 	// ----Chungus----
-	Texture2D chungus = LoadTexture("chungus-sprite.png"); // sprite chungus png
-	Vector2 chungusPosition = {(screenWidth/2)-50, 600};	//(x,y)(width,height)	   //{ (float)screenHeight - 10};	   //{(float)screenWidth / 2, (float)screenHeight / 2};
+	Texture2D chungus = LoadTexture("chungus-sprite.png");			 // sprite chungus png
 	float frameWidth = (float)(chungus.width / NUM_FRAMES_PER_LINE); // Sprite one frame rectangle width
 	float frameHeight = (float)(chungus.height / NUM_LINES);		 // Sprite one frame rectangle height
 	int currentFrame = 0;
@@ -34,31 +53,48 @@ int main()
 
 	// ----Wabbit----
 	Texture wabbit = LoadTexture("Big-Chungus-PNG.png"); // Static large chungus png
-	Vector2 wabbitPosition = {(float)screenWidth / 2, (float)screenHeight / 2};
 
 	// ----Projectile----
 	Texture2D projectile = LoadTexture("wabbit_alpha.png");
 	Vector2 projectilePosition = {GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f};
-	
 
 	SetTargetFPS(20);
-	// game loop
+
 	while (!WindowShouldClose()) // run the loop untill the user presses ESCAPE or presses the Close button on the window
 	{
 		// Update
 		//----------------------------------------------------------------------------------
-		if (IsKeyDown(KEY_RIGHT)){
+		if (IsKeyDown(KEY_RIGHT))
+		{
 			chungusPosition.x += 6.0f;
 		}
-		if (IsKeyDown(KEY_LEFT)){
+		if (IsKeyDown(KEY_LEFT))
+		{
 			chungusPosition.x -= 6.0f;
 		}
-		// if (IsKeyDown(KEY_UP)){
-		// 	chungusPosition.y -= 2.0f;
-		// }
-		// if (IsKeyDown(KEY_DOWN)){
-		// 	chungusPosition.y += 2.0f;
-		// }
+
+		if (IsKeyPressed(KEY_ENTER))
+		{
+		
+			restartGame();
+		}
+
+		if (IsKeyPressed(KEY_SPACE))
+		{
+			projectilePosition.x = chungusPosition.x + 58;
+			projectilePosition.y = chungusPosition.y;
+		}
+	
+		// Update chungus on end screen
+		if (gameOver)
+		{
+			if (wabbitPosition.y >= 150)
+			{
+				wabbitPosition.y -= 30.0f;
+			}
+		}
+
+		projectilePosition.y -= 20.0f;
 
 		// Animate Sprite
 		//----------------------------------------------------------------------------------
@@ -92,14 +128,15 @@ int main()
 		ClearBackground(BLACK);
 
 		// draw some text using the default font
+
 		DrawText("hello beautiful wabbit", 20, 200, 20, RED);
 
 		// draw our texture to the screen
-		DrawTexture(wabbit, 50, 50, WHITE);
+		DrawTexture(wabbit, wabbitPosition.x, wabbitPosition.y, WHITE);
 
 		DrawTextureRec(chungus, frameRec, chungusPosition, WHITE);
 
-		DrawTexture(projectile, 50, 50, WHITE);
+		DrawTexture(projectile, projectilePosition.x, projectilePosition.y, WHITE);
 
 		// // draw our texture to the screen
 		// DrawTexture(chungus, chungusPosition.x, chungusPosition.y, WHITE);

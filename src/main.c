@@ -26,11 +26,24 @@ typedef struct Character
 {
 	Vector2 position;
 	Vector2 speed;
+	Vector2 starting;
 	bool collision;
+	bool active;
 	Texture2D texture;
 	Sprite sprite;
 	Rectangle box;
 } Character;
+
+typedef struct Shot
+{
+	Vector2 starting;
+	bool collision;
+	bool active;
+	bool fired;
+	bool allowed;
+	int height;
+	Rectangle box;
+} Shot;
 
 // Globals -------------------------------------------------------------
 const int screenWidth = 1200;
@@ -43,6 +56,8 @@ static Character chungus = {0};
 static Character projectile = {0};
 
 static Character enemy[3] = {0};
+
+static Shot shot = {0};
 
 bool gameOver = false;
 
@@ -111,10 +126,14 @@ void InitGame(void)
 	chungus.collision = false;
 
 	//---projectile-----
-	projectile.position = (Vector2){1500, 0};
-	projectile.box = (Rectangle){projectile.position.x, projectile.position.y, projectile.texture.width, projectile.texture.height};
+	projectile.position = (Vector2){1500, 1};
 	
-	
+	//---shot-----------
+	shot.active = false;
+	shot.box = (Rectangle){0,0,0,0};
+	shot.height = 0;
+	shot.allowed = true;
+
 	//----enemy-----
 	for (int i = 0; i <= MAX_BALLS; i++)
 	{
@@ -136,7 +155,7 @@ void UpdateGame(void)
 		}
 		else
 		{
-			chungus.position.x += 1.0f;
+			chungus.position.x += 1.0f; // move slowly on game end
 		}
 	}
 	if (IsKeyDown(KEY_LEFT))
@@ -159,6 +178,8 @@ void UpdateGame(void)
 
 	if (IsKeyPressed(KEY_SPACE))
 	{
+		shot.active = true;
+
 		if (!chungus.collision)
 		{
 			projectile.position.x = chungus.position.x + 58;
@@ -175,15 +196,45 @@ void UpdateGame(void)
 	// Update chungus on end screen
 	if (gameOver)
 	{
-
 		if (endWabbit.position.y >= 150)
 		{
 			endWabbit.position.y -= 30.0f;
 		}
 	}
 
-	projectile.box = (Rectangle){projectile.position.x, projectile.position.y, projectile.texture.width, projectile.texture.height};
-	projectile.position.y -= 7.0f;
+	// -----SHOT UPDATE--------
+	// if (shot.active)
+	// {
+	// 	shot.height = 0;
+	// 	shot.starting = (Vector2){chungus.position.x + 70, chungus.position.y+140};
+	// 	shot.active = false;
+	// }
+	
+
+	if(shot.active == true)
+	{
+		if(shot.allowed == true)
+		{
+			shot.starting = (Vector2){chungus.position.x + 70, chungus.position.y + 140};	
+		}
+		shot.allowed = false;
+		shot.height +=6.0f;
+	}
+
+	if(shot.height > 720)
+	{
+		shot.allowed = true;
+		shot.active = false;
+		shot.height = 0;
+	}
+
+	shot.box = (Rectangle){shot.starting.x, shot.starting.y - shot.height, 7, shot.height};
+
+
+	// ------- Projectile Update -------
+	//projectile.box = (Rectangle){projectile.position.x, projectile.position.y, projectile.texture.width, projectile.texture.height};
+	// projectile.position.y -= 7.0f;
+
 
 	// updateSpriteChungus();
 	updateSprite(&chungus);
@@ -212,15 +263,14 @@ void DrawGame(void)
 	DrawText("hello beautiful wabbit", 20, 200, 20, RED);
 
 	// draw our texture to the screen
-	DrawTexture(endWabbit.texture, endWabbit.position.x, endWabbit.position.y, WHITE);
-
+	//DrawTexture(projectile.texture, projectile.position.x, projectile.position.y, WHITE);
+	DrawRectangleRec(shot.box, RED);
 	DrawTextureRec(chungus.texture, chungus.sprite.frameRec, chungus.position, WHITE);
-
-	DrawTexture(projectile.texture, projectile.position.x, projectile.position.y, WHITE);
 
 	for (int i = 0; i <= MAX_BALLS; i++){
 		DrawRectangleRec(enemy[i].box, GOLD);
 	}
+	DrawTexture(endWabbit.texture, endWabbit.position.x, endWabbit.position.y, WHITE);
 
 	// end the frame and get ready for the next one  (display frame, poll input, etc...)
 	EndDrawing();

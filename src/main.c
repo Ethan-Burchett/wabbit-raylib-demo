@@ -20,6 +20,7 @@ typedef struct Sprite
 	int num_lines;
 	Rectangle frameRec;
 	int framesCounter;
+	int tick;
 } Sprite;
 
 typedef struct Character
@@ -30,8 +31,6 @@ typedef struct Character
 	Texture2D texture;
 	Sprite sprite;
 } Character;
-
-
 
 // Globals -------------------------------------------------------------
 const int screenWidth = 1200;
@@ -55,8 +54,7 @@ static void DrawGame(void);		     // Draw game (one frame)
 static void UnloadGame(void);	     // Unload game
 static void UpdateDrawFrame(void);   // Update and Draw (one frame)
 void initSprite(Character *character);
-void initSpriteChungus(void); // Init chungus sprite - future work to make this general
-void updateSpriteChungus(void);
+void updateSprite(Character *character);
 
 int main()
 {
@@ -92,7 +90,7 @@ void InitEngine(void){
 	chungus.texture = LoadTexture("chungus-sprite.png");
 	projectile.texture = LoadTexture("wabbit_alpha.png");
 
-	SetTargetFPS(20);
+	SetTargetFPS(60);
 }
 
 // Initialize game 
@@ -100,15 +98,16 @@ void InitEngine(void){
 void InitGame(void){
 
 	//---endWabbit ---------
-	endWabbit.position = (Vector2){100,100};
+	endWabbit.position = (Vector2){60,1000};
 
 	//---chungus (player) ------------
 	// initSpriteChungus();
 	initSprite(&chungus);
 	chungus.position = (Vector2){(screenWidth / 2) - 50, 600};
+	chungus.collision = false;
 
 	//---projectile-----
-	projectile.position = (Vector2){1000,1000};
+	projectile.position = (Vector2){1500,0};
 	gameOver = false;
 }
 
@@ -119,43 +118,60 @@ void UpdateGame(void)
 	//----------------------------------------------------------------------------------
 	if (IsKeyDown(KEY_RIGHT))
 	{
-		if (chungus.position.x <= screenWidth - 150) // prevents going off screen
+		if (!chungus.collision && (chungus.position.x <= screenWidth - 150)) // prevents going off screen
 		{
-			chungus.position.x += 20.0f;
+			chungus.position.x += 7.0f;
+		}
+		else {
+			chungus.position.x += 1.0f;
 		}
 	}
 	if (IsKeyDown(KEY_LEFT))
 	{
-		if (chungus.position.x >= 0)
+		if (!chungus.collision && (chungus.position.x >= 0))
 		{
-			chungus.position.x -= 20.0f;
+			chungus.position.x -= 7.0f;
+		}
+		else{
+			chungus.position.x -= 1.0f;
 		}
 	}
 
 	if (IsKeyPressed(KEY_ENTER))
 	{
+		//gameOver = true;
 		InitGame(); // restarts game
 	}
 
 	if (IsKeyPressed(KEY_SPACE))
 	{
-		projectile.position.x = chungus.position.x + 58;
-		projectile.position.y = chungus.position.y;
+		if(!chungus.collision)
+		{
+			projectile.position.x = chungus.position.x + 58;
+			projectile.position.y = chungus.position.y;
+		}
+	}
+
+	if (IsKeyPressed('E')) // simulate game end
+	{
+		gameOver = true;
+		chungus.collision = true;
 	}
 
 	// Update chungus on end screen
 	if (gameOver)
 	{
+
 		if (endWabbit.position.y >= 150)
 		{
 			endWabbit.position.y -= 30.0f;
 		}
 	}
 
-	projectile.position.y -= 20.0f;
+	projectile.position.y -= 7.0f;
 
-	updateSpriteChungus();
-	
+	// updateSpriteChungus();
+	updateSprite(&chungus);
 }
 
 void DrawGame(void)
@@ -180,27 +196,7 @@ void DrawGame(void)
 	EndDrawing();
 }
 
-// UnloadGame - Final Cleanup
-void UnloadGame(void)
-{
-	UnloadTexture(endWabbit.texture);
-	UnloadTexture(chungus.texture);
-	UnloadTexture(projectile.texture);
-
-	// destory the window and cleanup the OpenGL context
-	CloseWindow();
-}
-
-void initSpriteChungus(void)
-{
-	chungus.sprite.frameHeight = (float)(chungus.texture.height / NUM_LINES);		  // Sprite one frame rectangle height
-	chungus.sprite.frameWidth = (float)(chungus.texture.width / NUM_FRAMES_PER_LINE); // Sprite one frame rectangle width
-	chungus.sprite.currentFrame = 0;
-	chungus.sprite.currentLine = 0;
-	chungus.sprite.frameRec = (Rectangle){0, 0, chungus.sprite.frameWidth, chungus.sprite.frameHeight};
-	chungus.sprite.framesCounter = 0;
-}
-
+// Init a sprite - pass in a &refrence for the character and will init the sprite 
 void initSprite(Character * character)
 {
 	character->sprite.frameHeight = (float)(character->texture.height / NUM_LINES);
@@ -211,27 +207,38 @@ void initSprite(Character * character)
 	character->sprite.framesCounter = 0;
 }
 
-
-
-void updateSpriteChungus(void)
+void updateSprite(Character *character)
 {
-	chungus.sprite.framesCounter++;
-	if (chungus.sprite.framesCounter > 2)
+	character->sprite.tick++;
+	if(character->sprite.tick % 3 == 0)
+		character->sprite.framesCounter++;
+	if (character->sprite.framesCounter > 2)
 	{
-		chungus.sprite.currentFrame++;
+		character->sprite.currentFrame++;
 
-		if (chungus.sprite.currentFrame >= NUM_FRAMES_PER_LINE)
+		if (character->sprite.currentFrame >= NUM_FRAMES_PER_LINE)
 		{
-			chungus.sprite.currentFrame = 0;
-			chungus.sprite.currentLine++;
+			character->sprite.currentFrame = 0;
+			character->sprite.currentLine++;
 
-			if (chungus.sprite.currentLine >= NUM_LINES)
+			if (character->sprite.currentLine >= NUM_LINES)
 			{
-				chungus.sprite.currentLine = 0;
+				character->sprite.currentLine = 0;
 			}
 		}
-		chungus.sprite.framesCounter = 0; // this is when it restarts and loops back around
+		character->sprite.framesCounter = 0; // this is when it restarts and loops back around
 	}
-	chungus.sprite.frameRec.x = chungus.sprite.frameWidth * chungus.sprite.currentFrame; // need to choose a frame over the png for each frame to display
-	chungus.sprite.frameRec.y = chungus.sprite.frameHeight * chungus.sprite.currentLine;
+	character->sprite.frameRec.x = character->sprite.frameWidth * character->sprite.currentFrame; // need to choose a frame over the png for each frame to display
+	character->sprite.frameRec.y = character->sprite.frameHeight * character->sprite.currentLine;
+}
+
+// UnloadGame - Final Cleanup
+void UnloadGame(void)
+{
+	UnloadTexture(endWabbit.texture);
+	UnloadTexture(chungus.texture);
+	UnloadTexture(projectile.texture);
+
+	// destory the window and cleanup the OpenGL context
+	CloseWindow();
 }

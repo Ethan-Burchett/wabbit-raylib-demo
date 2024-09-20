@@ -58,7 +58,7 @@ typedef struct Ball
 typedef struct Wall
 {
 	Rectangle box;
-	Texture2D texture;
+	Color color;
 } Wall;
 
 // Globals -------------------------------------------------------------
@@ -77,10 +77,10 @@ static Ball ball[MAX_BALLS] = {0};
 
 static Shot shot = {0};
 
-static Wall wall_ceiling = {0};
-static Wall wall_floor = {0};
-static Wall wall_left = {0};
-static Wall wall_right = {0};
+static Wall wall_ceiling = {{0,0, screenWidth,15},GRAY};
+static Wall wall_floor = {{0,730, screenWidth, 60}, GRAY};
+static Wall wall_left = {{0, 10, 15, screenHeight-80}, GRAY};
+static Wall wall_right = {{screenWidth-15, 10, 15, screenHeight - 80}, GRAY};
 
 bool gameOver = false;
 
@@ -307,8 +307,13 @@ void DrawGame(void)
 	// draw our texture to the screen
 	DrawRectangleRec(shot.box, RED);
 	DrawTexture(projectile.texture, projectile.position.x, projectile.position.y, WHITE);
-	DrawTextureRec(chungus.texture, chungus.sprite.frameRec, chungus.position, WHITE);
 
+	DrawRectangleRec(wall_floor.box,wall_floor.color);
+	DrawRectangleRec(wall_ceiling.box, wall_ceiling.color);
+	DrawRectangleRec(wall_left.box, wall_left.color);
+	DrawRectangleRec(wall_right.box, wall_right.color);
+
+	DrawTextureRec(chungus.texture, chungus.sprite.frameRec, chungus.position, WHITE);
 	//DrawTexture(gameOverWabbit, 100, 100, WHITE);
 
 	//DrawTexture(endWabbit.texture, endWabbit.position.x, endWabbit.position.y,WHITE);

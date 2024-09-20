@@ -7,8 +7,9 @@
 // Defines -------------------
 #define NUM_FRAMES_PER_LINE 3
 #define NUM_LINES 4
-#define MAX_BALLS 1
-#define GRAVITY 4
+#define MAX_BALLS 5
+#define GRAVITY 0.2f
+#define ELASTICITY 1.01f
 
 typedef struct Sprite
 {
@@ -53,6 +54,7 @@ typedef struct Ball
 	bool collision;
 	Rectangle box;
 	int size;
+	Color color;
 } Ball;
 
 typedef struct Wall
@@ -79,8 +81,8 @@ static Shot shot = {0};
 
 static Wall wall_ceiling = {{0,0, screenWidth,15},GRAY};
 static Wall wall_floor = {{0,730, screenWidth, 60}, GRAY};
-static Wall wall_left = {{0, 10, 15, screenHeight-80}, GRAY};
-static Wall wall_right = {{screenWidth-15, 10, 15, screenHeight - 80}, GRAY};
+static Wall wall_left = {{0, -1000, 15, screenHeight+985}, GRAY};
+static Wall wall_right = {{screenWidth - 15, -1000, 15, screenHeight + 985}, GRAY};
 
 bool gameOver = false;
 
@@ -161,7 +163,8 @@ void InitGame(void)
 	{
 		ball[i].size = 90;
 		ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size}; //(x,y)
-		ball[i].speed = (Vector2){GetRandomValue(-2, 2), -3};
+		ball[i].speed = (Vector2){GetRandomValue(-3, 3), GetRandomValue(-8, 0)};
+		ball[i].color = (Color){GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(150, 255)};
 	}
 		gameOver = false;
 
@@ -263,12 +266,14 @@ void UpdateGame(void)
 		{
 			ball[i].collision = true;
 			projectile.collision = true;
+			ball[i].speed = (Vector2){GetRandomValue(-3, 3), GetRandomValue(-8, 0)};
 			ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size};
 		}
 
 		if (CheckCollisionRecs(shot.box,ball[i].box))
 		{
 			ball[i].collision = true;
+			ball[i].speed = (Vector2){GetRandomValue(-3, 3), GetRandomValue(-8, 0)};
 			ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size};
 		}
 	}
@@ -284,10 +289,36 @@ void UpdateBalls(void)
 	// --- update gravity
 	for (int i = 0; i <= MAX_BALLS; i++)
 	{
-		ball[i].box.y += ball[i].speed.y + GRAVITY;
+		ball[i].speed.y += GRAVITY;
+		ball[i].box.y += ball[i].speed.y ;
 		ball[i].box.x += ball[i].speed.x;
 	}
+
 	// check for collision with walls
+	for (int i = 0; i <= MAX_BALLS; i++)
+	{
+		if (CheckCollisionRecs(ball[i].box,wall_floor.box)) // wall_floor
+		{
+			ball[i].speed.y = -ball[i].speed.y * ELASTICITY;
+			ball[i].box.y = wall_floor.box.y - ball[i].box.height; 
+			
+		}
+		if (CheckCollisionRecs(ball[i].box, wall_ceiling.box)) // wall_ceiling NOT WORKING - possibly ignore ceiling?? 
+		{
+			// ball[i].speed.y = -ball[i].speed.y * ELASTICITY;
+			// ball[i].box.y = wall_ceiling.box.y - ball[i].box.height;
+		}
+		if (CheckCollisionRecs(ball[i].box, wall_left.box)) // wall_left
+		{
+			ball[i].speed.x = -ball[i].speed.x * ELASTICITY;
+			//ball[i].box.y = wall_left.box.y - ball[i].box.height;
+		}
+		if (CheckCollisionRecs(ball[i].box, wall_right.box)) // wall_right
+		{
+			ball[i].speed.x = -ball[i].speed.x * ELASTICITY;
+			// ball[i].box.y = wall_left.box.y - ball[i].box.height;
+		}
+	}
 
 	// check for collision with player - end game
 }
@@ -309,7 +340,7 @@ void DrawGame(void)
 	DrawTexture(projectile.texture, projectile.position.x, projectile.position.y, WHITE);
 
 	DrawRectangleRec(wall_floor.box,wall_floor.color);
-	DrawRectangleRec(wall_ceiling.box, wall_ceiling.color);
+	//DrawRectangleRec(wall_ceiling.box, wall_ceiling.color);
 	DrawRectangleRec(wall_left.box, wall_left.color);
 	DrawRectangleRec(wall_right.box, wall_right.color);
 
@@ -321,7 +352,7 @@ void DrawGame(void)
 	//DrawRectangleRec((Rectangle){100,100,100,100},WHITE);
 
 	for (int i = 0; i <= MAX_BALLS; i++){
-		DrawRectangleRec(ball[i].box, GOLD);
+		DrawRectangleRec(ball[i].box, ball[i].color);
 	}
 
 	// end the frame and get ready for the next one  (display frame, poll input, etc...)

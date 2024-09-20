@@ -7,7 +7,8 @@
 // Defines -------------------
 #define NUM_FRAMES_PER_LINE 3
 #define NUM_LINES 4
-#define MAX_BALLS 3
+#define MAX_BALLS 1
+#define GRAVITY 4
 
 typedef struct Sprite
 {
@@ -39,11 +40,26 @@ typedef struct Shot
 	Vector2 starting;
 	bool collision;
 	bool active;
-	bool fired;
 	bool allowed;
 	int height;
 	Rectangle box;
 } Shot;
+
+typedef struct Ball
+{
+	Vector2 position;
+	Vector2 speed;
+	bool active;
+	bool collision;
+	Rectangle box;
+	int size;
+} Ball;
+
+typedef struct Wall
+{
+	Rectangle box;
+	Texture2D texture;
+} Wall;
 
 // Globals -------------------------------------------------------------
 const int screenWidth = 1200;
@@ -51,13 +67,20 @@ const int screenHeight = 800;
 
 static Character endWabbit = {0};
 
+//static Texture2D gameOverWabbit = {0};
+
 static Character chungus = {0};
 
 static Character projectile = {0};
 
-static Character enemy[3] = {0};
+static Ball ball[MAX_BALLS] = {0};
 
 static Shot shot = {0};
+
+static Wall wall_ceiling = {0};
+static Wall wall_floor = {0};
+static Wall wall_left = {0};
+static Wall wall_right = {0};
 
 bool gameOver = false;
 
@@ -70,6 +93,7 @@ static void UpdateGame(void);	   // Update game (one frame)
 static void DrawGame(void);		   // Draw game (one frame)
 static void UnloadGame(void);	   // Unload game
 static void UpdateDrawFrame(void); // Update and Draw (one frame)
+void UpdateBalls(void);
 void initSprite(Character *character);
 void updateSprite(Character *character);
 
@@ -115,12 +139,10 @@ void InitEngine(void)
 // Run each time on game over and reset
 void InitGame(void)
 {
-
 	//---endWabbit ---------
 	endWabbit.position = (Vector2){60, 1000};
 
 	//---chungus (player) ------------
-	// initSpriteChungus();
 	initSprite(&chungus);
 	chungus.position = (Vector2){(screenWidth / 2) - 50, 600};
 	chungus.collision = false;
@@ -134,13 +156,18 @@ void InitGame(void)
 	shot.height = 0;
 	shot.allowed = true;
 
-	//----enemy-----
-	for (int i = 0; i <= MAX_BALLS; i++)
+	//----BALL-----
+	for (int i = 1; i <= MAX_BALLS; i++)
 	{
-		enemy[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), 100, 100}; //(x,y)
+		ball[i].size = 90;
+		ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size}; //(x,y)
+		ball[i].speed = (Vector2){GetRandomValue(-2, 2), -3};
 	}
 		gameOver = false;
-	}
+
+	//----WALL-----
+	
+}
 
 // update one frame of the game
 void UpdateGame(void)
@@ -178,12 +205,9 @@ void UpdateGame(void)
 
 	if (IsKeyPressed(KEY_SPACE))
 	{
-		shot.active = true;
-
 		if (!chungus.collision)
 		{
-			projectile.position.x = chungus.position.x + 58;
-			projectile.position.y = chungus.position.y;
+			shot.active = true;
 		}
 	}
 
@@ -193,7 +217,7 @@ void UpdateGame(void)
 		chungus.collision = true;
 	}
 
-	// Update chungus on end screen
+	//Update chungus on end screen
 	if (gameOver)
 	{
 		if (endWabbit.position.y >= 150)
@@ -203,22 +227,16 @@ void UpdateGame(void)
 	}
 
 	// -----SHOT UPDATE--------
-	// if (shot.active)
-	// {
-	// 	shot.height = 0;
-	// 	shot.starting = (Vector2){chungus.position.x + 70, chungus.position.y+140};
-	// 	shot.active = false;
-	// }
-	
-
 	if(shot.active == true)
 	{
 		if(shot.allowed == true)
 		{
-			shot.starting = (Vector2){chungus.position.x + 70, chungus.position.y + 140};	
+			shot.starting = (Vector2){chungus.position.x + 70, chungus.position.y + 140};
+			projectile.position.x = chungus.position.x + 57;
+			projectile.position.y = chungus.position.y + 120;
 		}
 		shot.allowed = false;
-		shot.height +=6.0f;
+		shot.height +=7.0f;
 	}
 
 	if(shot.height > 720)
@@ -230,10 +248,9 @@ void UpdateGame(void)
 
 	shot.box = (Rectangle){shot.starting.x, shot.starting.y - shot.height, 7, shot.height};
 
-
 	// ------- Projectile Update -------
-	//projectile.box = (Rectangle){projectile.position.x, projectile.position.y, projectile.texture.width, projectile.texture.height};
-	// projectile.position.y -= 7.0f;
+	projectile.box = (Rectangle){projectile.position.x, projectile.position.y, projectile.texture.width, projectile.texture.height};
+	projectile.position.y -= 7.0f;
 
 
 	// updateSpriteChungus();
@@ -242,13 +259,37 @@ void UpdateGame(void)
 	// check collision
 	for(int i = 0; i <= MAX_BALLS; i++)
 	{
-		if (CheckCollisionRecs(projectile.box,enemy[i].box))
+		if (CheckCollisionRecs(projectile.box,ball[i].box))
 		{
-			enemy[i].collision = true;
+			ball[i].collision = true;
 			projectile.collision = true;
-			enemy[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), 100, 100};
+			ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size};
+		}
+
+		if (CheckCollisionRecs(shot.box,ball[i].box))
+		{
+			ball[i].collision = true;
+			ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size};
 		}
 	}
+
+	UpdateBalls();
+
+}
+
+void UpdateBalls(void)
+{
+	// ---- update direction
+
+	// --- update gravity
+	for (int i = 0; i <= MAX_BALLS; i++)
+	{
+		ball[i].box.y += ball[i].speed.y + GRAVITY;
+		ball[i].box.x += ball[i].speed.x;
+	}
+	// check for collision with walls
+
+	// check for collision with player - end game
 }
 
 void DrawGame(void)
@@ -260,17 +301,23 @@ void DrawGame(void)
 
 	// draw some text using the default font
 
+
 	DrawText("hello beautiful wabbit", 20, 200, 20, RED);
 
 	// draw our texture to the screen
-	//DrawTexture(projectile.texture, projectile.position.x, projectile.position.y, WHITE);
 	DrawRectangleRec(shot.box, RED);
+	DrawTexture(projectile.texture, projectile.position.x, projectile.position.y, WHITE);
 	DrawTextureRec(chungus.texture, chungus.sprite.frameRec, chungus.position, WHITE);
 
+	//DrawTexture(gameOverWabbit, 100, 100, WHITE);
+
+	//DrawTexture(endWabbit.texture, endWabbit.position.x, endWabbit.position.y,WHITE);
+
+	//DrawRectangleRec((Rectangle){100,100,100,100},WHITE);
+
 	for (int i = 0; i <= MAX_BALLS; i++){
-		DrawRectangleRec(enemy[i].box, GOLD);
+		DrawRectangleRec(ball[i].box, GOLD);
 	}
-	DrawTexture(endWabbit.texture, endWabbit.position.x, endWabbit.position.y, WHITE);
 
 	// end the frame and get ready for the next one  (display frame, poll input, etc...)
 	EndDrawing();
@@ -322,3 +369,4 @@ void UnloadGame(void)
 	// destory the window and cleanup the OpenGL context
 	CloseWindow();
 }
+

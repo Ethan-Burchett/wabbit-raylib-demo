@@ -7,9 +7,9 @@
 // Defines -------------------
 #define NUM_FRAMES_PER_LINE 3
 #define NUM_LINES 4
-#define MAX_BALLS 5
+#define MAX_BALLS 3
 #define GRAVITY 0.2f
-#define ELASTICITY 1.01f
+#define ELASTICITY 0.9f
 
 typedef struct Sprite
 {
@@ -164,7 +164,7 @@ void InitGame(void)
 		ball[i].size = 90;
 		ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size}; //(x,y)
 		ball[i].speed = (Vector2){GetRandomValue(-3, 3), GetRandomValue(-8, 0)};
-		ball[i].color = (Color){GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(150, 255)};
+		ball[i].color = (Color){GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(250, 255)};
 	}
 		gameOver = false;
 
@@ -311,12 +311,12 @@ void UpdateBalls(void)
 		if (CheckCollisionRecs(ball[i].box, wall_left.box)) // wall_left
 		{
 			ball[i].speed.x = -ball[i].speed.x * ELASTICITY;
-			//ball[i].box.y = wall_left.box.y - ball[i].box.height;
+			ball[i].box.x = wall_left.box.x + wall_left.box.width;
 		}
 		if (CheckCollisionRecs(ball[i].box, wall_right.box)) // wall_right
 		{
 			ball[i].speed.x = -ball[i].speed.x * ELASTICITY;
-			// ball[i].box.y = wall_left.box.y - ball[i].box.height;
+			ball[i].box.x = wall_right.box.x - ball[i].box.width;
 		}
 	}
 
@@ -333,7 +333,7 @@ void DrawGame(void)
 	// draw some text using the default font
 
 
-	DrawText("hello beautiful wabbit", 20, 200, 20, RED);
+	//DrawText("hello beautiful wabbit", 20, 200, 20, RED);
 
 	// draw our texture to the screen
 	DrawRectangleRec(shot.box, RED);
@@ -344,7 +344,8 @@ void DrawGame(void)
 	DrawRectangleRec(wall_left.box, wall_left.color);
 	DrawRectangleRec(wall_right.box, wall_right.color);
 
-	DrawTextureRec(chungus.texture, chungus.sprite.frameRec, chungus.position, WHITE);
+	// draw chungus: 
+	//DrawTextureRec(chungus.texture, chungus.sprite.frameRec, chungus.position, WHITE);
 	//DrawTexture(gameOverWabbit, 100, 100, WHITE);
 
 	//DrawTexture(endWabbit.texture, endWabbit.position.x, endWabbit.position.y,WHITE);

@@ -9,43 +9,43 @@ ifndef verbose
 endif
 
 ifeq ($(config),debug_x64)
-  raylib_quickstart_my_game_config = debug_x64
+  raylib_playground_config = debug_x64
   raylib_config = debug_x64
 
 else ifeq ($(config),debug_x86)
-  raylib_quickstart_my_game_config = debug_x86
+  raylib_playground_config = debug_x86
   raylib_config = debug_x86
 
 else ifeq ($(config),debug_arm64)
-  raylib_quickstart_my_game_config = debug_arm64
+  raylib_playground_config = debug_arm64
   raylib_config = debug_arm64
 
 else ifeq ($(config),release_x64)
-  raylib_quickstart_my_game_config = release_x64
+  raylib_playground_config = release_x64
   raylib_config = release_x64
 
 else ifeq ($(config),release_x86)
-  raylib_quickstart_my_game_config = release_x86
+  raylib_playground_config = release_x86
   raylib_config = release_x86
 
 else ifeq ($(config),release_arm64)
-  raylib_quickstart_my_game_config = release_arm64
+  raylib_playground_config = release_arm64
   raylib_config = release_arm64
 
 else
   $(error "invalid configuration $(config)")
 endif
 
-PROJECTS := raylib-quickstart-my-game raylib
+PROJECTS := raylib-playground raylib
 
 .PHONY: all clean help $(PROJECTS) 
 
 all: $(PROJECTS)
 
-raylib-quickstart-my-game: raylib
-ifneq (,$(raylib_quickstart_my_game_config))
-	@echo "==== Building raylib-quickstart-my-game ($(raylib_quickstart_my_game_config)) ===="
-	@${MAKE} --no-print-directory -C build/build_files -f raylib-quickstart-my-game.make config=$(raylib_quickstart_my_game_config)
+raylib-playground: raylib
+ifneq (,$(raylib_playground_config))
+	@echo "==== Building raylib-playground ($(raylib_playground_config)) ===="
+	@${MAKE} --no-print-directory -C build/build_files -f raylib-playground.make config=$(raylib_playground_config)
 endif
 
 raylib:
@@ -55,7 +55,7 @@ ifneq (,$(raylib_config))
 endif
 
 clean:
-	@${MAKE} --no-print-directory -C build/build_files -f raylib-quickstart-my-game.make clean
+	@${MAKE} --no-print-directory -C build/build_files -f raylib-playground.make clean
 	@${MAKE} --no-print-directory -C build/build_files -f raylib.make clean
 
 help:
@@ -72,7 +72,7 @@ help:
 	@echo "TARGETS:"
 	@echo "   all (default)"
 	@echo "   clean"
-	@echo "   raylib-quickstart-my-game"
+	@echo "   raylib-playground"
 	@echo "   raylib"
 	@echo ""
 	@echo "For more information, see https://github.com/premake/premake-core/wiki"

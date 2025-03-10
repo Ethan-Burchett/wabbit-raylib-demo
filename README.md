@@ -1,3 +1,8 @@
+## About
+This is a demo game to showcase some basic features of raylib and webassembly
+Some aspects are lifted from the classic arcade game - Pang, Cannon Ball, Buster Bros or Pomping World -> 1989
+It is also a basic demonstration of collision physics 
+
 ### Getting started
 
 - raylib is built in c and has all the dependencies built into it

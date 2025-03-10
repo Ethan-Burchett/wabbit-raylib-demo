@@ -9,43 +9,43 @@ ifndef verbose
 endif
 
 ifeq ($(config),debug_x64)
-  raylib_playground_config = debug_x64
+  wabbit_raylib_demo_config = debug_x64
   raylib_config = debug_x64
 
 else ifeq ($(config),debug_x86)
-  raylib_playground_config = debug_x86
+  wabbit_raylib_demo_config = debug_x86
   raylib_config = debug_x86
 
 else ifeq ($(config),debug_arm64)
-  raylib_playground_config = debug_arm64
+  wabbit_raylib_demo_config = debug_arm64
   raylib_config = debug_arm64
 
 else ifeq ($(config),release_x64)
-  raylib_playground_config = release_x64
+  wabbit_raylib_demo_config = release_x64
   raylib_config = release_x64
 
 else ifeq ($(config),release_x86)
-  raylib_playground_config = release_x86
+  wabbit_raylib_demo_config = release_x86
   raylib_config = release_x86
 
 else ifeq ($(config),release_arm64)
-  raylib_playground_config = release_arm64
+  wabbit_raylib_demo_config = release_arm64
   raylib_config = release_arm64
 
 else
   $(error "invalid configuration $(config)")
 endif
 
-PROJECTS := raylib-playground raylib
+PROJECTS := wabbit-raylib-demo raylib
 
 .PHONY: all clean help $(PROJECTS) 
 
 all: $(PROJECTS)
 
-raylib-playground: raylib
-ifneq (,$(raylib_playground_config))
-	@echo "==== Building raylib-playground ($(raylib_playground_config)) ===="
-	@${MAKE} --no-print-directory -C build/build_files -f raylib-playground.make config=$(raylib_playground_config)
+wabbit-raylib-demo: raylib
+ifneq (,$(wabbit_raylib_demo_config))
+	@echo "==== Building wabbit-raylib-demo ($(wabbit_raylib_demo_config)) ===="
+	@${MAKE} --no-print-directory -C build/build_files -f wabbit-raylib-demo.make config=$(wabbit_raylib_demo_config)
 endif
 
 raylib:
@@ -55,7 +55,7 @@ ifneq (,$(raylib_config))
 endif
 
 clean:
-	@${MAKE} --no-print-directory -C build/build_files -f raylib-playground.make clean
+	@${MAKE} --no-print-directory -C build/build_files -f wabbit-raylib-demo.make clean
 	@${MAKE} --no-print-directory -C build/build_files -f raylib.make clean
 
 help:
@@ -72,7 +72,7 @@ help:
 	@echo "TARGETS:"
 	@echo "   all (default)"
 	@echo "   clean"
-	@echo "   raylib-playground"
+	@echo "   wabbit-raylib-demo"
 	@echo "   raylib"
 	@echo ""
 	@echo "For more information, see https://github.com/premake/premake-core/wiki"

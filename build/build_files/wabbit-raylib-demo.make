@@ -27,13 +27,11 @@ endif
 ifeq ($(origin AR), default)
   AR = ar
 endif
-INCLUDES += -I../external/raylib-master/src -I../external/raylib-master/src/external/glfw/include
+INCLUDES += -I../../src -I../../include -I../external/raylib-master/src -I../external/raylib-master/src/external -I../external/raylib-master/src/external/glfw/include
 FORCE_INCLUDE +=
 ALL_CPPFLAGS += $(CPPFLAGS) -MMD -MP $(DEFINES) $(INCLUDES)
 ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-LIBS +=
-LDDEPS +=
-LINKCMD = $(AR) -rcs "$@" $(OBJECTS)
+LINKCMD = $(CXX) -o "$@" $(OBJECTS) $(RESOURCES) $(ALL_LDFLAGS) $(LIBS)
 define PREBUILDCMDS
 endef
 define PRELINKCMDS
@@ -43,56 +41,68 @@ endef
 
 ifeq ($(config),debug_x64)
 TARGETDIR = ../../bin/Debug
-TARGET = $(TARGETDIR)/libraylib.a
-OBJDIR = obj/x64/Debug/raylib
+TARGET = $(TARGETDIR)/wabbit-raylib-demo
+OBJDIR = obj/x64/Debug/wabbit-raylib-demo
 DEFINES += -DDEBUG -DPLATFORM_DESKTOP -DGRAPHICS_API_OPENGL_33
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -g -Wno-deprecated-declarations
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -g -Wno-deprecated-declarations
+LIBS += ../../bin/Debug/libraylib.a -framework OpenGL -framework Cocoa -framework IOKit -framework CoreFoundation -framework CoreAudio -framework CoreVideo -framework AudioToolbox
+LDDEPS += ../../bin/Debug/libraylib.a
 ALL_LDFLAGS += $(LDFLAGS) -m64
 
 else ifeq ($(config),debug_x86)
 TARGETDIR = ../../bin/Debug
-TARGET = $(TARGETDIR)/libraylib.a
-OBJDIR = obj/x86/Debug/raylib
+TARGET = $(TARGETDIR)/wabbit-raylib-demo
+OBJDIR = obj/x86/Debug/wabbit-raylib-demo
 DEFINES += -DDEBUG -DPLATFORM_DESKTOP -DGRAPHICS_API_OPENGL_33
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m32 -g -Wno-deprecated-declarations
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m32 -g -Wno-deprecated-declarations
+LIBS += ../../bin/Debug/libraylib.a -framework OpenGL -framework Cocoa -framework IOKit -framework CoreFoundation -framework CoreAudio -framework CoreVideo -framework AudioToolbox
+LDDEPS += ../../bin/Debug/libraylib.a
 ALL_LDFLAGS += $(LDFLAGS) -m32
 
 else ifeq ($(config),debug_arm64)
 TARGETDIR = ../../bin/Debug
-TARGET = $(TARGETDIR)/libraylib.a
-OBJDIR = obj/ARM64/Debug/raylib
+TARGET = $(TARGETDIR)/wabbit-raylib-demo
+OBJDIR = obj/ARM64/Debug/wabbit-raylib-demo
 DEFINES += -DDEBUG -DPLATFORM_DESKTOP -DGRAPHICS_API_OPENGL_33
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -g -Wno-deprecated-declarations
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -g -Wno-deprecated-declarations
+LIBS += ../../bin/Debug/libraylib.a -framework OpenGL -framework Cocoa -framework IOKit -framework CoreFoundation -framework CoreAudio -framework CoreVideo -framework AudioToolbox
+LDDEPS += ../../bin/Debug/libraylib.a
 ALL_LDFLAGS += $(LDFLAGS)
 
 else ifeq ($(config),release_x64)
 TARGETDIR = ../../bin/Release
-TARGET = $(TARGETDIR)/libraylib.a
-OBJDIR = obj/x64/Release/raylib
+TARGET = $(TARGETDIR)/wabbit-raylib-demo
+OBJDIR = obj/x64/Release/wabbit-raylib-demo
 DEFINES += -DNDEBUG -DPLATFORM_DESKTOP -DGRAPHICS_API_OPENGL_33
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m64 -O2 -Wno-deprecated-declarations
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m64 -O2 -Wno-deprecated-declarations
+LIBS += ../../bin/Release/libraylib.a -framework OpenGL -framework Cocoa -framework IOKit -framework CoreFoundation -framework CoreAudio -framework CoreVideo -framework AudioToolbox
+LDDEPS += ../../bin/Release/libraylib.a
 ALL_LDFLAGS += $(LDFLAGS) -m64
 
 else ifeq ($(config),release_x86)
 TARGETDIR = ../../bin/Release
-TARGET = $(TARGETDIR)/libraylib.a
-OBJDIR = obj/x86/Release/raylib
+TARGET = $(TARGETDIR)/wabbit-raylib-demo
+OBJDIR = obj/x86/Release/wabbit-raylib-demo
 DEFINES += -DNDEBUG -DPLATFORM_DESKTOP -DGRAPHICS_API_OPENGL_33
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -m32 -O2 -Wno-deprecated-declarations
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -m32 -O2 -Wno-deprecated-declarations
+LIBS += ../../bin/Release/libraylib.a -framework OpenGL -framework Cocoa -framework IOKit -framework CoreFoundation -framework CoreAudio -framework CoreVideo -framework AudioToolbox
+LDDEPS += ../../bin/Release/libraylib.a
 ALL_LDFLAGS += $(LDFLAGS) -m32
 
 else ifeq ($(config),release_arm64)
 TARGETDIR = ../../bin/Release
-TARGET = $(TARGETDIR)/libraylib.a
-OBJDIR = obj/ARM64/Release/raylib
+TARGET = $(TARGETDIR)/wabbit-raylib-demo
+OBJDIR = obj/ARM64/Release/wabbit-raylib-demo
 DEFINES += -DNDEBUG -DPLATFORM_DESKTOP -DGRAPHICS_API_OPENGL_33
 ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -O2 -Wno-deprecated-declarations
 ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -O2 -Wno-deprecated-declarations
+LIBS += ../../bin/Release/libraylib.a -framework OpenGL -framework Cocoa -framework IOKit -framework CoreFoundation -framework CoreAudio -framework CoreVideo -framework AudioToolbox
+LDDEPS += ../../bin/Release/libraylib.a
 ALL_LDFLAGS += $(LDFLAGS)
 
 endif
@@ -100,7 +110,6 @@ endif
 # Per File Configurations
 # #############################################
 
-PERFILE_FLAGS_0 = $(ALL_CFLAGS) -x objective-c
 
 # File sets
 # #############################################
@@ -108,22 +117,8 @@ PERFILE_FLAGS_0 = $(ALL_CFLAGS) -x objective-c
 GENERATED :=
 OBJECTS :=
 
-GENERATED += $(OBJDIR)/raudio.o
-GENERATED += $(OBJDIR)/rcore.o
-GENERATED += $(OBJDIR)/rglfw.o
-GENERATED += $(OBJDIR)/rmodels.o
-GENERATED += $(OBJDIR)/rshapes.o
-GENERATED += $(OBJDIR)/rtext.o
-GENERATED += $(OBJDIR)/rtextures.o
-GENERATED += $(OBJDIR)/utils.o
-OBJECTS += $(OBJDIR)/raudio.o
-OBJECTS += $(OBJDIR)/rcore.o
-OBJECTS += $(OBJDIR)/rglfw.o
-OBJECTS += $(OBJDIR)/rmodels.o
-OBJECTS += $(OBJDIR)/rshapes.o
-OBJECTS += $(OBJDIR)/rtext.o
-OBJECTS += $(OBJDIR)/rtextures.o
-OBJECTS += $(OBJDIR)/utils.o
+GENERATED += $(OBJDIR)/main.o
+OBJECTS += $(OBJDIR)/main.o
 
 # Rules
 # #############################################
@@ -133,7 +128,7 @@ all: $(TARGET)
 
 $(TARGET): $(GENERATED) $(OBJECTS) $(LDDEPS) | $(TARGETDIR)
 	$(PRELINKCMDS)
-	@echo Linking raylib
+	@echo Linking wabbit-raylib-demo
 	$(SILENT) $(LINKCMD)
 	$(POSTBUILDCMDS)
 
@@ -154,7 +149,7 @@ else
 endif
 
 clean:
-	@echo Cleaning raylib
+	@echo Cleaning wabbit-raylib-demo
 ifeq (posix,$(SHELLTYPE))
 	$(SILENT) rm -f  $(TARGET)
 	$(SILENT) rm -rf $(GENERATED)
@@ -172,7 +167,7 @@ ifneq (,$(PCH))
 $(OBJECTS): $(GCH) | $(PCH_PLACEHOLDER)
 $(GCH): $(PCH) | prebuild
 	@echo $(notdir $<)
-	$(SILENT) $(CC) -x c-header $(ALL_CFLAGS) -o "$@" -MF "$(@:%.gch=%.d)" -c "$<"
+	$(SILENT) $(CXX) -x c++-header $(ALL_CXXFLAGS) -o "$@" -MF "$(@:%.gch=%.d)" -c "$<"
 $(PCH_PLACEHOLDER): $(GCH) | $(OBJDIR)
 ifeq (posix,$(SHELLTYPE))
 	$(SILENT) touch "$@"
@@ -187,28 +182,7 @@ endif
 # File Rules
 # #############################################
 
-$(OBJDIR)/raudio.o: ../external/raylib-master/src/raudio.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/rcore.o: ../external/raylib-master/src/rcore.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/rglfw.o: ../external/raylib-master/src/rglfw.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(PERFILE_FLAGS_0) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/rmodels.o: ../external/raylib-master/src/rmodels.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/rshapes.o: ../external/raylib-master/src/rshapes.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/rtext.o: ../external/raylib-master/src/rtext.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/rtextures.o: ../external/raylib-master/src/rtextures.c
-	@echo $(notdir $<)
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/utils.o: ../external/raylib-master/src/utils.c
+$(OBJDIR)/main.o: ../../src/main.c
 	@echo $(notdir $<)
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 

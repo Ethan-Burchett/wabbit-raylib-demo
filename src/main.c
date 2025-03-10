@@ -7,9 +7,9 @@
 // Defines -------------------
 #define NUM_FRAMES_PER_LINE 3
 #define NUM_LINES 4
-#define MAX_BALLS 3
+#define MAX_BALLS 2
 #define GRAVITY 0.2f
-#define ELASTICITY 0.9f
+#define ELASTICITY 0.95f
 
 typedef struct Sprite
 {
@@ -163,7 +163,7 @@ void InitGame(void)
 	{
 		ball[i].size = 90;
 		ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size}; //(x,y)
-		ball[i].speed = (Vector2){GetRandomValue(-3, 3), GetRandomValue(-8, 0)};
+		ball[i].speed = (Vector2){GetRandomValue(0, 0), GetRandomValue(-8, 0)}; //4,-4
 		ball[i].color = (Color){GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(250, 255)};
 	}
 		gameOver = false;
@@ -230,7 +230,7 @@ void UpdateGame(void)
 	}
 
 	// -----SHOT UPDATE--------
-	if(shot.active == true)
+	if(false)//if(shot.active == true)
 	{
 		if(shot.allowed == true)
 		{
@@ -276,6 +276,11 @@ void UpdateGame(void)
 			ball[i].speed = (Vector2){GetRandomValue(-3, 3), GetRandomValue(-8, 0)};
 			ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size};
 		}
+		if (CheckCollisionRecs(ball[i].box,chungus.box))
+		{
+			chungus.collision = true;
+			gameOver=true;
+		}
 	}
 
 	UpdateBalls();
@@ -308,7 +313,7 @@ void UpdateBalls(void)
 			// ball[i].speed.y = -ball[i].speed.y * ELASTICITY;
 			// ball[i].box.y = wall_ceiling.box.y - ball[i].box.height;
 		}
-		if (CheckCollisionRecs(ball[i].box, wall_left.box)) // wall_left
+		if (CheckCollisionRecs(ball[i].box, wall_left.box)) // wall_leftt
 		{
 			ball[i].speed.x = -ball[i].speed.x * ELASTICITY;
 			ball[i].box.x = wall_left.box.x + wall_left.box.width;
@@ -336,7 +341,7 @@ void DrawGame(void)
 	//DrawText("hello beautiful wabbit", 20, 200, 20, RED);
 
 	// draw our texture to the screen
-	DrawRectangleRec(shot.box, RED);
+	//DrawRectangleRec(shot.box, RED);
 	DrawTexture(projectile.texture, projectile.position.x, projectile.position.y, WHITE);
 
 	DrawRectangleRec(wall_floor.box,wall_floor.color);
@@ -345,7 +350,7 @@ void DrawGame(void)
 	DrawRectangleRec(wall_right.box, wall_right.color);
 
 	// draw chungus: 
-	//DrawTextureRec(chungus.texture, chungus.sprite.frameRec, chungus.position, WHITE);
+	DrawTextureRec(chungus.texture, chungus.sprite.frameRec, chungus.position, WHITE);
 	//DrawTexture(gameOverWabbit, 100, 100, WHITE);
 
 	//DrawTexture(endWabbit.texture, endWabbit.position.x, endWabbit.position.y,WHITE);

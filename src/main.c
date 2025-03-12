@@ -7,9 +7,11 @@
 // Defines -------------------
 #define NUM_FRAMES_PER_LINE 3
 #define NUM_LINES 4
-#define MAX_BALLS 2
-#define GRAVITY 0.2f
+#define MAX_BALLS 1
+#define GRAVITY 0.1f
+#define VELOCITY 10
 #define ELASTICITY 0.95f
+#define BALL_SIZE 90
 
 typedef struct Sprite
 {
@@ -55,6 +57,7 @@ typedef struct Ball
 	Rectangle box;
 	int size;
 	Color color;
+	Color color_temp;
 } Ball;
 
 typedef struct Wall
@@ -69,22 +72,25 @@ const int screenHeight = 800;
 
 static Character endWabbit = {0};
 
-//static Texture2D gameOverWabbit = {0};
+// static Texture2D gameOverWabbit = {0};
 
 static Character chungus = {0};
 
 static Character projectile = {0};
 
 static Ball ball[MAX_BALLS] = {0};
+static Ball sBall[(MAX_BALLS * 2)] = {0};
 
 static Shot shot = {0};
 
-static Wall wall_ceiling = {{0,0, screenWidth,15},GRAY};
-static Wall wall_floor = {{0,730, screenWidth, 60}, GRAY};
-static Wall wall_left = {{0, -1000, 15, screenHeight+985}, GRAY};
+static Wall wall_ceiling = {{0, 0, screenWidth, 15}, GRAY};
+static Wall wall_floor = {{0, 730, screenWidth, 60}, GRAY};
+static Wall wall_left = {{0, -1000, 15, screenHeight + 985}, GRAY};
 static Wall wall_right = {{screenWidth - 15, -1000, 15, screenHeight + 985}, GRAY};
 
 bool gameOver = false;
+bool split = false;
+int split_clock = 0;
 
 //------------------------------------------------------------------------------------
 // Module Functions Declaration (local)
@@ -151,25 +157,39 @@ void InitGame(void)
 
 	//---projectile-----
 	projectile.position = (Vector2){1500, 1};
-	
+
 	//---shot-----------
 	shot.active = false;
-	shot.box = (Rectangle){0,0,0,0};
+	shot.box = (Rectangle){0, 0, 0, 0};
 	shot.height = 0;
 	shot.allowed = true;
 
-	//----BALL-----
-	for (int i = 1; i <= MAX_BALLS; i++)
+	
+	//----BALL----- Init big balls
+	for (int i = 0; i < MAX_BALLS; i++)
 	{
-		ball[i].size = 90;
+		printf("init big ball: \n");
+		// printf("ball_size: %d\n", BALL_SIZE);
+		ball[i].size = BALL_SIZE;
 		ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size}; //(x,y)
-		ball[i].speed = (Vector2){GetRandomValue(0, 0), GetRandomValue(-8, 0)}; //4,-4
+		ball[i].speed = (Vector2){(GetRandomValue(-VELOCITY, VELOCITY) + 1) / 2.3, GetRandomValue(-8, 0)};		  // 4,-4
 		ball[i].color = (Color){GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(250, 255)};
 	}
-		gameOver = false;
+
+	//----sBALL----- Init small balls
+
+	for (int i = 0; i < (MAX_BALLS * 2) ; i++)
+	{
+		sBall[i].size = BALL_SIZE / 2;
+		//printf("ball_size: %d\n", sBall[i].size);
+		sBall[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), sBall[i].size, sBall[i].size}; //(x,y)
+		sBall[i].speed = (Vector2){(GetRandomValue(-VELOCITY, VELOCITY) + 1) / 2.3, GetRandomValue(-8, 0)};			 // 4,-4
+		sBall[i].color = (Color){GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(250, 255)};
+		printf("init small ball: \n");
+	}
+	gameOver = false;
 
 	//----WALL-----
-	
 }
 
 // update one frame of the game
@@ -220,7 +240,14 @@ void UpdateGame(void)
 		chungus.collision = true;
 	}
 
-	//Update chungus on end screen
+	if (IsKeyPressed('G')) // simulate ball hit split
+	{
+		split = true;
+		// split ball hit into smaller ball.
+		// 1. just make the ball turn a different color - red.
+	}
+
+	// Update chungus on end screen
 	if (gameOver)
 	{
 		if (endWabbit.position.y >= 150)
@@ -230,19 +257,19 @@ void UpdateGame(void)
 	}
 
 	// -----SHOT UPDATE--------
-	if(false)//if(shot.active == true)
+	if (false) // if(shot.active == true)
 	{
-		if(shot.allowed == true)
+		if (shot.allowed == true)
 		{
 			shot.starting = (Vector2){chungus.position.x + 70, chungus.position.y + 140};
 			projectile.position.x = chungus.position.x + 57;
 			projectile.position.y = chungus.position.y + 120;
 		}
 		shot.allowed = false;
-		shot.height +=7.0f;
+		shot.height += 7.0f;
 	}
 
-	if(shot.height > 720)
+	if (shot.height > 720)
 	{
 		shot.allowed = true;
 		shot.active = false;
@@ -255,14 +282,13 @@ void UpdateGame(void)
 	projectile.box = (Rectangle){projectile.position.x, projectile.position.y, projectile.texture.width, projectile.texture.height};
 	projectile.position.y -= 7.0f;
 
-
 	// updateSpriteChungus();
 	updateSprite(&chungus);
 
 	// check collision
-	for(int i = 0; i <= MAX_BALLS; i++)
+	for (int i = 0; i <= MAX_BALLS; i++)
 	{
-		if (CheckCollisionRecs(projectile.box,ball[i].box))
+		if (CheckCollisionRecs(projectile.box, ball[i].box))
 		{
 			ball[i].collision = true;
 			projectile.collision = true;
@@ -270,60 +296,145 @@ void UpdateGame(void)
 			ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size};
 		}
 
-		if (CheckCollisionRecs(shot.box,ball[i].box))
+		if (CheckCollisionRecs(shot.box, ball[i].box))
 		{
 			ball[i].collision = true;
 			ball[i].speed = (Vector2){GetRandomValue(-3, 3), GetRandomValue(-8, 0)};
 			ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size};
 		}
-		if (CheckCollisionRecs(ball[i].box,chungus.box))
+		if (CheckCollisionRecs(ball[i].box, chungus.box))
 		{
 			chungus.collision = true;
-			gameOver=true;
+			gameOver = true;
 		}
 	}
 
 	UpdateBalls();
+}
 
+Ball UpdateBall(Ball single_ball)
+{
+	if (single_ball.size < 90){ // is small ball
+
+		single_ball.speed.y += GRAVITY * 0.7;
+		single_ball.box.y += single_ball.speed.y * 0.7;
+		single_ball.box.x += single_ball.speed.x * 0.7;
+	} else {
+		// update movement and gravity
+		single_ball.speed.y += GRAVITY;
+		single_ball.box.y += single_ball.speed.y;
+		single_ball.box.x += single_ball.speed.x;
+	}
+
+	if (CheckCollisionRecs(single_ball.box, wall_floor.box)) // wall_floor
+	{
+		single_ball.speed.y = -single_ball.speed.y * ELASTICITY;
+		single_ball.box.y = wall_floor.box.y - single_ball.box.height;
+	}
+	if (CheckCollisionRecs(single_ball.box, wall_left.box)) // wall_leftt
+	{
+		single_ball.speed.x = -single_ball.speed.x * ELASTICITY;
+		single_ball.box.x = wall_left.box.x + wall_left.box.width;
+	}
+	if (CheckCollisionRecs(single_ball.box, wall_right.box)) // wall_right
+	{
+		single_ball.speed.x = -single_ball.speed.x * ELASTICITY;
+		single_ball.box.x = wall_right.box.x - single_ball.box.width;
+	}
+	return single_ball;
 }
 
 void UpdateBalls(void)
 {
+
+	for (int i = 0; i < MAX_BALLS; i++)
+	{
+		ball[i] = UpdateBall(ball[i]);
+	}
+	//ball[1] = UpdateBall(ball[1]);
+	// printf("b box  : %f,%f \n", ball[0].box.x, ball[0].box.y);
+	// printf("b speed: %f,%f \n", ball[0].speed.x, ball[0].speed.y);
+
+	//sBall[1] = UpdateBall(sBall[1]);
+	for (int i = 0; i < (MAX_BALLS * 2); i++)
+	{
+		sBall[i] = UpdateBall(sBall[i]);
+	}
+
 	// ---- update direction
 
-	// --- update gravity
-	for (int i = 0; i <= MAX_BALLS; i++)
-	{
-		ball[i].speed.y += GRAVITY;
-		ball[i].box.y += ball[i].speed.y ;
-		ball[i].box.x += ball[i].speed.x;
-	}
+	//--- update gravity
+	// for (int i = 0; i <= MAX_BALLS; i++)
+	// {
+	// 	ball[i].speed.y += GRAVITY;
+	// 	ball[i].box.y += ball[i].speed.y;
+	// 	ball[i].box.x += ball[i].speed.x;
+	// }
 
-	// check for collision with walls
-	for (int i = 0; i <= MAX_BALLS; i++)
-	{
-		if (CheckCollisionRecs(ball[i].box,wall_floor.box)) // wall_floor
-		{
-			ball[i].speed.y = -ball[i].speed.y * ELASTICITY;
-			ball[i].box.y = wall_floor.box.y - ball[i].box.height; 
-			
-		}
-		if (CheckCollisionRecs(ball[i].box, wall_ceiling.box)) // wall_ceiling NOT WORKING - possibly ignore ceiling?? 
-		{
-			// ball[i].speed.y = -ball[i].speed.y * ELASTICITY;
-			// ball[i].box.y = wall_ceiling.box.y - ball[i].box.height;
-		}
-		if (CheckCollisionRecs(ball[i].box, wall_left.box)) // wall_leftt
-		{
-			ball[i].speed.x = -ball[i].speed.x * ELASTICITY;
-			ball[i].box.x = wall_left.box.x + wall_left.box.width;
-		}
-		if (CheckCollisionRecs(ball[i].box, wall_right.box)) // wall_right
-		{
-			ball[i].speed.x = -ball[i].speed.x * ELASTICITY;
-			ball[i].box.x = wall_right.box.x - ball[i].box.width;
-		}
-	}
+	// // check for collision with walls
+	// for (int i = 0; i <= MAX_BALLS; i++)
+	// {
+	// 	if (CheckCollisionRecs(ball[i].box, wall_floor.box)) // wall_floor
+	// 	{
+	// 		ball[i].speed.y = -ball[i].speed.y * ELASTICITY;
+	// 		ball[i].box.y = wall_floor.box.y - ball[i].box.height;
+	// 	}
+	// 	if (CheckCollisionRecs(ball[i].box, wall_ceiling.box)) // wall_ceiling NOT WORKING - possibly ignore ceiling??
+	// 	{
+	// 		// ball[i].speed.y = -ball[i].speed.y * ELASTICITY;
+	// 		// ball[i].box.y = wall_ceiling.box.y - ball[i].box.height;
+	// 	}
+	// 	if (CheckCollisionRecs(ball[i].box, wall_left.box)) // wall_leftt
+	// 	{
+	// 		ball[i].speed.x = -ball[i].speed.x * ELASTICITY;
+	// 		ball[i].box.x = wall_left.box.x + wall_left.box.width;
+	// 	}
+	// 	if (CheckCollisionRecs(ball[i].box, wall_right.box)) // wall_right
+	// 	{
+	// 		ball[i].speed.x = -ball[i].speed.x * ELASTICITY;
+	// 		ball[i].box.x = wall_right.box.x - ball[i].box.width;
+	// 	}
+	// }
+
+	// if (split == true)
+	// {
+	// 	if (split == true && split_clock == 0)
+	// 	{ // keep track of the original ball color
+	// 		printf("change color temp, split_clock: %d\n", split_clock);
+	// 		for (int i = 0; i <= MAX_BALLS; i++)
+	// 		{
+	// 			printf("colors: r %d", ball[i].color_temp.r);
+	// 			printf(" g  %d", ball[i].color_temp.g);
+	// 			printf(" b %d\n", ball[i].color_temp.b);
+	// 			ball[i].color_temp = ball[i].color;
+	// 		}
+	// 	}
+
+	// 	split_clock += 1;
+	// 	// printf("main split loop split_clock: %d\n", split_clock);
+	// 	if (split_clock > 50)
+	// 	{
+	// 		printf("reset, split_clock: %d\n", split_clock);
+	// 		split = false;
+	// 		for (int i = 0; i <= MAX_BALLS; i++)
+	// 		{
+	// 			printf("colors: r %d", ball[i].color_temp.r);
+	// 			printf(" g  %d", ball[i].color_temp.g);
+	// 			printf(" b %d\n", ball[i].color_temp.b);
+	// 			ball[i].color = ball[i].color_temp; // put color back after they turn red for a second
+	// 		}
+	// 		split_clock = 0;
+	// 	}
+
+	// 	for (int i = 0; i <= MAX_BALLS; i++)
+	// 	{
+	// 		ball[i].color = (Color){255, 0, 0, 255};
+	// 		ball[i].speed.y = 0; //+= GRAVITY;
+	// 							 // ball[i].speed.x = 0; //+= GRAVITY;
+	// 							 // ball[i].box.y += 0;// ball[i].speed.y;
+	// 							 // ball[i].box.x += 0;//ball[i].speed.x;
+	// 	}
+	// }
 
 	// check for collision with player - end game
 }
@@ -337,28 +448,32 @@ void DrawGame(void)
 
 	// draw some text using the default font
 
-
-	//DrawText("hello beautiful wabbit", 20, 200, 20, RED);
+	// DrawText("hello beautiful wabbit", 20, 200, 20, RED);
 
 	// draw our texture to the screen
-	//DrawRectangleRec(shot.box, RED);
+	// DrawRectangleRec(shot.box, RED);
 	DrawTexture(projectile.texture, projectile.position.x, projectile.position.y, WHITE);
 
-	DrawRectangleRec(wall_floor.box,wall_floor.color);
-	//DrawRectangleRec(wall_ceiling.box, wall_ceiling.color);
+	DrawRectangleRec(wall_floor.box, wall_floor.color);
+	// DrawRectangleRec(wall_ceiling.box, wall_ceiling.color);
 	DrawRectangleRec(wall_left.box, wall_left.color);
 	DrawRectangleRec(wall_right.box, wall_right.color);
 
-	// draw chungus: 
+	// draw chungus:
 	DrawTextureRec(chungus.texture, chungus.sprite.frameRec, chungus.position, WHITE);
-	//DrawTexture(gameOverWabbit, 100, 100, WHITE);
+	// DrawTexture(gameOverWabbit, 100, 100, WHITE);
 
-	//DrawTexture(endWabbit.texture, endWabbit.position.x, endWabbit.position.y,WHITE);
+	// DrawTexture(endWabbit.texture, endWabbit.position.x, endWabbit.position.y,WHITE);
 
-	//DrawRectangleRec((Rectangle){100,100,100,100},WHITE);
+	// DrawRectangleRec((Rectangle){100,100,100,100},WHITE);
 
-	for (int i = 0; i <= MAX_BALLS; i++){
+	for (int i = 0; i <= MAX_BALLS; i++)
+	{
 		DrawRectangleRec(ball[i].box, ball[i].color);
+	}
+	for (int i = 0; i <= MAX_BALLS * 2; i++)
+	{
+		DrawRectangleRec(sBall[i].box, sBall[i].color);
 	}
 
 	// end the frame and get ready for the next one  (display frame, poll input, etc...)
@@ -411,4 +526,3 @@ void UnloadGame(void)
 	// destory the window and cleanup the OpenGL context
 	CloseWindow();
 }
-

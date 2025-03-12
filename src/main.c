@@ -8,7 +8,7 @@
 #define NUM_FRAMES_PER_LINE 3
 #define NUM_LINES 4
 #define MAX_BALLS 1
-#define GRAVITY 0.1f
+#define GRAVITY 0.15f
 #define VELOCITY 10
 #define ELASTICITY 0.95f
 #define BALL_SIZE 90
@@ -102,24 +102,20 @@ static void DrawGame(void);		   // Draw game (one frame)
 static void UnloadGame(void);	   // Unload game
 static void UpdateDrawFrame(void); // Update and Draw (one frame)
 void UpdateBalls(void);
+void CheckBallCollision(void);
 void initSprite(Character *character);
 void updateSprite(Character *character);
 
 int main()
 {
 	InitEngine();
-
 	InitGame();
-
 	while (!WindowShouldClose()) // run the loop untill the user presses ESCAPE or presses the Close button on the window
 	{
 		UpdateGame();
-
 		DrawGame();
 	}
-
 	UnloadGame();
-
 	return 0;
 }
 
@@ -164,7 +160,6 @@ void InitGame(void)
 	shot.height = 0;
 	shot.allowed = true;
 
-	
 	//----BALL----- Init big balls
 	for (int i = 0; i < MAX_BALLS; i++)
 	{
@@ -177,7 +172,6 @@ void InitGame(void)
 	}
 
 	//----sBALL----- Init small balls
-
 	for (int i = 0; i < (MAX_BALLS * 2) ; i++)
 	{
 		sBall[i].size = BALL_SIZE / 2;
@@ -188,8 +182,7 @@ void InitGame(void)
 		printf("init small ball: \n");
 	}
 	gameOver = false;
-
-	//----WALL-----
+	
 }
 
 // update one frame of the game
@@ -257,7 +250,7 @@ void UpdateGame(void)
 	}
 
 	// -----SHOT UPDATE--------
-	if (false) // if(shot.active == true)
+	if(shot.active == true)
 	{
 		if (shot.allowed == true)
 		{
@@ -285,7 +278,12 @@ void UpdateGame(void)
 	// updateSpriteChungus();
 	updateSprite(&chungus);
 
-	// check collision
+
+	CheckBallCollision();
+	UpdateBalls();
+}
+
+void CheckBallCollision(){
 	for (int i = 0; i <= MAX_BALLS; i++)
 	{
 		if (CheckCollisionRecs(projectile.box, ball[i].box))
@@ -302,14 +300,7 @@ void UpdateGame(void)
 			ball[i].speed = (Vector2){GetRandomValue(-3, 3), GetRandomValue(-8, 0)};
 			ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size};
 		}
-		if (CheckCollisionRecs(ball[i].box, chungus.box))
-		{
-			chungus.collision = true;
-			gameOver = true;
-		}
 	}
-
-	UpdateBalls();
 }
 
 Ball UpdateBall(Ball single_ball)
@@ -351,50 +342,11 @@ void UpdateBalls(void)
 	{
 		ball[i] = UpdateBall(ball[i]);
 	}
-	//ball[1] = UpdateBall(ball[1]);
-	// printf("b box  : %f,%f \n", ball[0].box.x, ball[0].box.y);
-	// printf("b speed: %f,%f \n", ball[0].speed.x, ball[0].speed.y);
-
-	//sBall[1] = UpdateBall(sBall[1]);
+	
 	for (int i = 0; i < (MAX_BALLS * 2); i++)
 	{
 		sBall[i] = UpdateBall(sBall[i]);
 	}
-
-	// ---- update direction
-
-	//--- update gravity
-	// for (int i = 0; i <= MAX_BALLS; i++)
-	// {
-	// 	ball[i].speed.y += GRAVITY;
-	// 	ball[i].box.y += ball[i].speed.y;
-	// 	ball[i].box.x += ball[i].speed.x;
-	// }
-
-	// // check for collision with walls
-	// for (int i = 0; i <= MAX_BALLS; i++)
-	// {
-	// 	if (CheckCollisionRecs(ball[i].box, wall_floor.box)) // wall_floor
-	// 	{
-	// 		ball[i].speed.y = -ball[i].speed.y * ELASTICITY;
-	// 		ball[i].box.y = wall_floor.box.y - ball[i].box.height;
-	// 	}
-	// 	if (CheckCollisionRecs(ball[i].box, wall_ceiling.box)) // wall_ceiling NOT WORKING - possibly ignore ceiling??
-	// 	{
-	// 		// ball[i].speed.y = -ball[i].speed.y * ELASTICITY;
-	// 		// ball[i].box.y = wall_ceiling.box.y - ball[i].box.height;
-	// 	}
-	// 	if (CheckCollisionRecs(ball[i].box, wall_left.box)) // wall_leftt
-	// 	{
-	// 		ball[i].speed.x = -ball[i].speed.x * ELASTICITY;
-	// 		ball[i].box.x = wall_left.box.x + wall_left.box.width;
-	// 	}
-	// 	if (CheckCollisionRecs(ball[i].box, wall_right.box)) // wall_right
-	// 	{
-	// 		ball[i].speed.x = -ball[i].speed.x * ELASTICITY;
-	// 		ball[i].box.x = wall_right.box.x - ball[i].box.width;
-	// 	}
-	// }
 
 	// if (split == true)
 	// {
@@ -451,7 +403,7 @@ void DrawGame(void)
 	// DrawText("hello beautiful wabbit", 20, 200, 20, RED);
 
 	// draw our texture to the screen
-	// DrawRectangleRec(shot.box, RED);
+	DrawRectangleRec(shot.box, RED);
 	DrawTexture(projectile.texture, projectile.position.x, projectile.position.y, WHITE);
 
 	DrawRectangleRec(wall_floor.box, wall_floor.color);

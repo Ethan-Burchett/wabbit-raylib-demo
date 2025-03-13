@@ -7,7 +7,7 @@
 // Defines -------------------
 #define NUM_FRAMES_PER_LINE 3
 #define NUM_LINES 4
-#define MAX_BALLS 1
+#define MAX_BALLS 2
 #define GRAVITY 0.15f
 #define VELOCITY 10
 #define ELASTICITY 0.95f
@@ -58,6 +58,9 @@ typedef struct Ball
 	int size;
 	Color color;
 	Color color_temp;
+	int id;
+	char type; // s, m, l, x - small, medium, large, extra large
+	
 } Ball;
 
 typedef struct Wall
@@ -101,8 +104,11 @@ static void UpdateGame(void);	   // Update game (one frame)
 static void DrawGame(void);		   // Draw game (one frame)
 static void UnloadGame(void);	   // Unload game
 static void UpdateDrawFrame(void); // Update and Draw (one frame)
+void KeyPressHandler(void);
+void GameOverState(void);
 void UpdateBalls(void);
-void CheckBallCollision(void);
+void UpdateProjectile(void);
+void CheckBallProjectileCollision(void);
 void initSprite(Character *character);
 void updateSprite(Character *character);
 
@@ -169,17 +175,23 @@ void InitGame(void)
 		ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size}; //(x,y)
 		ball[i].speed = (Vector2){(GetRandomValue(-VELOCITY, VELOCITY) + 1) / 2.3, GetRandomValue(-8, 0)};		  // 4,-4
 		ball[i].color = (Color){GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(250, 255)};
+		ball[i].id = i+10; // m balls have + 10 id ofset
+		ball[i].type = 'm';
 	}
 
-	//----sBALL----- Init small balls
-	for (int i = 0; i < (MAX_BALLS * 2) ; i++)
-	{
-		sBall[i].size = BALL_SIZE / 2;
-		//printf("ball_size: %d\n", sBall[i].size);
-		sBall[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), sBall[i].size, sBall[i].size}; //(x,y)
-		sBall[i].speed = (Vector2){(GetRandomValue(-VELOCITY, VELOCITY) + 1) / 2.3, GetRandomValue(-8, 0)};			 // 4,-4
-		sBall[i].color = (Color){GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(250, 255)};
-		printf("init small ball: \n");
+	if (false)
+	{   //----sBALL----- Init small balls
+		for (int i = 0; i < (MAX_BALLS * 2); i++)
+		{
+			sBall[i].size = BALL_SIZE / 2;
+			// printf("ball_size: %d\n", sBall[i].size);
+			sBall[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), sBall[i].size, sBall[i].size}; //(x,y)
+			sBall[i].speed = (Vector2){(GetRandomValue(-VELOCITY, VELOCITY) + 1) / 2.3, GetRandomValue(-8, 0)};			 // 4,-4
+			sBall[i].color = (Color){GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(250, 255)};
+			sBall[i].id = i;
+			sBall[i].type = 's';
+			printf("init small ball: \n");
+		}
 	}
 	gameOver = false;
 	
@@ -188,8 +200,14 @@ void InitGame(void)
 // update one frame of the game
 void UpdateGame(void)
 {
-	// Update
-	//----------------------------------------------------------------------------------
+	KeyPressHandler();
+	GameOverState();
+	updateSprite(&chungus);
+	UpdateProjectile();
+	UpdateBalls();
+}
+
+void KeyPressHandler(){
 	if (IsKeyDown(KEY_RIGHT))
 	{
 		if (!chungus.collision && (chungus.position.x <= screenWidth - 150)) // prevents going off screen
@@ -239,7 +257,9 @@ void UpdateGame(void)
 		// split ball hit into smaller ball.
 		// 1. just make the ball turn a different color - red.
 	}
+}
 
+void GameOverState(){
 	// Update chungus on end screen
 	if (gameOver)
 	{
@@ -248,9 +268,12 @@ void UpdateGame(void)
 			endWabbit.position.y -= 30.0f;
 		}
 	}
+}
 
+
+void UpdateProjectile(){
 	// -----SHOT UPDATE--------
-	if(shot.active == true)
+	if (shot.active == true)
 	{
 		if (shot.allowed == true)
 		{
@@ -269,21 +292,13 @@ void UpdateGame(void)
 		shot.height = 0;
 	}
 
-	shot.box = (Rectangle){shot.starting.x, shot.starting.y - shot.height, 7, shot.height};
-
 	// ------- Projectile Update -------
+	shot.box = (Rectangle){shot.starting.x, shot.starting.y - shot.height, 7, shot.height};
 	projectile.box = (Rectangle){projectile.position.x, projectile.position.y, projectile.texture.width, projectile.texture.height};
 	projectile.position.y -= 7.0f;
-
-	// updateSpriteChungus();
-	updateSprite(&chungus);
-
-
-	CheckBallCollision();
-	UpdateBalls();
 }
 
-void CheckBallCollision(){
+void CheckBallProjectileCollision(){
 	for (int i = 0; i <= MAX_BALLS; i++)
 	{
 		if (CheckCollisionRecs(projectile.box, ball[i].box))
@@ -312,6 +327,7 @@ Ball UpdateBall(Ball single_ball)
 		single_ball.box.x += single_ball.speed.x * 0.7;
 	} else {
 		// update movement and gravity
+		//printf("speed y: %d\n",single_ball.speed.y);
 		single_ball.speed.y += GRAVITY;
 		single_ball.box.y += single_ball.speed.y;
 		single_ball.box.x += single_ball.speed.x;
@@ -332,11 +348,42 @@ Ball UpdateBall(Ball single_ball)
 		single_ball.speed.x = -single_ball.speed.x * ELASTICITY;
 		single_ball.box.x = wall_right.box.x - single_ball.box.width;
 	}
+
+	for(int i = 0; i < MAX_BALLS; i++){
+		if( single_ball.id != ball[i].id){
+			if (CheckCollisionRecs(single_ball.box, ball[i].box)) // check for colide with other balls if not itself
+			{
+				single_ball.speed.x = -single_ball.speed.x * ELASTICITY + 1;
+				single_ball.speed.y = -single_ball.speed.y * ELASTICITY + 1;
+				//single_ball.box.x =//-single_ball.box.x; // ball[i].box.x - single_ball.box.width;
+			}
+		}
+	}
+
+	// small ball collisions
+	for (int i = 0; i < MAX_BALLS * 2; i++)
+	{
+		if (single_ball.id != sBall[i].id)
+		{
+			if (CheckCollisionRecs(single_ball.box, sBall[i].box)) // check for colide with other balls if not itself
+			{
+				single_ball.speed.x = -single_ball.speed.x * ELASTICITY;
+				single_ball.speed.y = -single_ball.speed.y * ELASTICITY;
+				//single_ball.box.x = sBall[i].box.x - single_ball.box.width;
+				//single_ball.box.y = sBall[i].box.y - single_ball.box.height;
+				// single_ball.box.x =//-single_ball.box.x; // ball[i].box.x - single_ball.box.width;
+			}
+		}
+	}
+
 	return single_ball;
 }
 
+//void ResolveElastic Collision
+
 void UpdateBalls(void)
 {
+	CheckBallProjectileCollision();
 
 	for (int i = 0; i < MAX_BALLS; i++)
 	{

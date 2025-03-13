@@ -104,6 +104,7 @@ static void UpdateGame(void);	   // Update game (one frame)
 static void DrawGame(void);		   // Draw game (one frame)
 static void UnloadGame(void);	   // Unload game
 static void UpdateDrawFrame(void); // Update and Draw (one frame)
+void hitLargeBall(Ball *ball);
 void ResolveElasticCollision(Ball *b1, Ball *b2);
 void KeyPressHandler(void);
 void GameOverState(void);
@@ -178,6 +179,7 @@ void updateSprite(Character * character);
 			ball[i].color = (Color){GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(250, 255)};
 			ball[i].id = i + 10; // m balls have + 10 id ofset
 			ball[i].type = 'm';
+			ball[i].active = true;
 		}
 
 		if (true)
@@ -186,11 +188,13 @@ void updateSprite(Character * character);
 			{
 				sBall[i].size = BALL_SIZE / 2;
 				// printf("ball_size: %d\n", sBall[i].size);
-				sBall[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), sBall[i].size, sBall[i].size}; //(x,y)
+				//sBall[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), sBall[i].size, sBall[i].size}; //(x,y)
+				sBall[i].box = (Rectangle){0, 0, sBall[i].size, sBall[i].size};
 				sBall[i].speed = (Vector2){(GetRandomValue(-VELOCITY, VELOCITY) + 1) / 2.3, GetRandomValue(-8, 0)};			 // 4,-4
 				sBall[i].color = (Color){GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(250, 255)};
 				sBall[i].id = i;
 				sBall[i].type = 's';
+				sBall[i].active = false;
 				printf("init small ball: \n");
 			}
 		}
@@ -304,86 +308,118 @@ void updateSprite(Character * character);
 	{
 		for (int i = 0; i <= MAX_BALLS; i++)
 		{
-			if (CheckCollisionRecs(projectile.box, ball[i].box))
+			if (CheckCollisionRecs(projectile.box, ball[i].box) || CheckCollisionRecs(shot.box, ball[i].box))
 			{
+				//ball[i].active = false;
 				ball[i].collision = true;
 				projectile.collision = true;
-				ball[i].speed = (Vector2){GetRandomValue(-3, 3), GetRandomValue(-8, 0)};
-				ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size};
+				ball[i].box = (Rectangle){0, 0, ball[i].size, ball[i].size}; // put off screen
+				hitLargeBall(&ball[i]);
+				//ball[i].speed = (Vector2){GetRandomValue(-3, 3), GetRandomValue(-8, 0)};
+				//ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size};
 			}
 
-			if (CheckCollisionRecs(shot.box, ball[i].box))
+		}
+
+		for (int i = 0; i <= MAX_BALLS * 2; i++)
+		{
+			if (CheckCollisionRecs(projectile.box, sBall[i].box) || CheckCollisionRecs(shot.box, sBall[i].box))
 			{
-				ball[i].collision = true;
-				ball[i].speed = (Vector2){GetRandomValue(-3, 3), GetRandomValue(-8, 0)};
-				ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size};
+				sBall[i].collision = true;
+				sBall[i].active = false;
+				projectile.collision = true;
+				sBall[i].box = (Rectangle){0, 0, ball[i].size, ball[i].size};
+				// sBall[i].speed = (Vector2){GetRandomValue(-3, 3), GetRandomValue(-8, 0)};
+				// sBall[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), sBall[i].size, sBall[i].size};
 			}
 		}
 	}
 
+	void hitLargeBall(Ball *ball){
+		//1 large is hit. set the location of two small balls to be its locations. set upwards motion for them and delete the large ball. 
+		ball->active = false;
+		// 2. find center of the box and have two new boxes spring from it. 
+		sBall[0].active = true;
+		Vector2 new_small_ball_pos = {ball->position.x, ball->position.y};
+		sBall[0].box = (Rectangle){500, 500, sBall[0].size, sBall[0].size};
+		// for(int i = 0; i < MAX_BALLS * 2; i++){
+		// 	if(!sBall[i].active){
+		// 		sBall[i].active;
+		// 		sBall[i].box = (Rectangle){new_small_ball_pos.x, new_small_ball_pos.y, sBall[i].size, sBall[i].size};
+		// 	}
+		// }
+
+	}
+
 	Ball UpdateBall(Ball single_ball)
 	{
-		if (single_ball.size < 90)
-		{ // is small ball
+		if (single_ball.active == true)
+		{
+			if (single_ball.size < 90)
+			{ // is small ball
 
-			single_ball.speed.y += GRAVITY * 0.7;
-			single_ball.box.y += single_ball.speed.y * 0.7;
-			single_ball.box.x += single_ball.speed.x * 0.7;
-		}
-		else
-		{
-			// update movement and gravity
-			// printf("speed y: %d\n",single_ball.speed.y);
-			single_ball.speed.y += GRAVITY;
-			single_ball.box.y += single_ball.speed.y;
-			single_ball.box.x += single_ball.speed.x;
-		}
-
-		if (CheckCollisionRecs(single_ball.box, wall_floor.box)) // wall_floor
-		{
-			single_ball.speed.y = -single_ball.speed.y * ELASTICITY;
-			single_ball.box.y = wall_floor.box.y - single_ball.box.height;
-		}
-		if (CheckCollisionRecs(single_ball.box, wall_left.box)) // wall_leftt
-		{
-			single_ball.speed.x = -single_ball.speed.x * ELASTICITY;
-			single_ball.box.x = wall_left.box.x + wall_left.box.width;
-		}
-		if (CheckCollisionRecs(single_ball.box, wall_right.box)) // wall_right
-		{
-			single_ball.speed.x = -single_ball.speed.x * ELASTICITY;
-			single_ball.box.x = wall_right.box.x - single_ball.box.width;
-		}
-
-		for (int i = 0; i < MAX_BALLS; i++)
-		{
-			if (single_ball.id != ball[i].id)
+				single_ball.speed.y += GRAVITY * 0.7;
+				single_ball.box.y += single_ball.speed.y * 0.7;
+				single_ball.box.x += single_ball.speed.x * 0.7;
+			}
+			else
 			{
-				if (CheckCollisionRecs(single_ball.box, ball[i].box)) // check for colide with other balls if not itself
+				// update movement and gravity
+				// printf("speed y: %d\n",single_ball.speed.y);
+				single_ball.speed.y += GRAVITY;
+				single_ball.box.y += single_ball.speed.y;
+				single_ball.box.x += single_ball.speed.x;
+			}
+
+			if (CheckCollisionRecs(single_ball.box, wall_floor.box)) // wall_floor
+			{
+				single_ball.speed.y = -single_ball.speed.y * ELASTICITY;
+				single_ball.box.y = wall_floor.box.y - single_ball.box.height;
+			}
+			if (CheckCollisionRecs(single_ball.box, wall_left.box)) // wall_leftt
+			{
+				single_ball.speed.x = -single_ball.speed.x * ELASTICITY;
+				single_ball.box.x = wall_left.box.x + wall_left.box.width;
+			}
+			if (CheckCollisionRecs(single_ball.box, wall_right.box)) // wall_right
+			{
+				single_ball.speed.x = -single_ball.speed.x * ELASTICITY;
+				single_ball.box.x = wall_right.box.x - single_ball.box.width;
+			}
+
+			for (int i = 0; i < MAX_BALLS; i++)
+			{
+				if (single_ball.id != ball[i].id)
 				{
-					ResolveElasticCollision(&single_ball, &ball[i]);
-					// single_ball.speed.x = -single_ball.speed.x * ELASTICITY;
-					// single_ball.speed.y = -single_ball.speed.y * ELASTICITY;
-					// single_ball.box.x =//-single_ball.box.x; // ball[i].box.x - single_ball.box.width;
+					if (CheckCollisionRecs(single_ball.box, ball[i].box)) // check for colide with other balls if not itself
+					{
+						ResolveElasticCollision(&single_ball, &ball[i]);
+						// single_ball.speed.x = -single_ball.speed.x * ELASTICITY;
+						// single_ball.speed.y = -single_ball.speed.y * ELASTICITY;
+						// single_ball.box.x =//-single_ball.box.x; // ball[i].box.x - single_ball.box.width;
+					}
 				}
 			}
-		}
 
-		// small ball collisions
-		for (int i = 0; i < MAX_BALLS * 2; i++)
-		{
-			if (single_ball.id != sBall[i].id)
+			// small ball collisions
+			for (int i = 0; i < MAX_BALLS * 2; i++)
 			{
-				if (CheckCollisionRecs(single_ball.box, sBall[i].box)) // check for colide with other balls if not itself
+				if (single_ball.id != sBall[i].id)
 				{
-					ResolveElasticCollision(&single_ball, &ball[i]);
-					// single_ball.speed.x = -single_ball.speed.x * ELASTICITY;
-					// single_ball.speed.y = -single_ball.speed.y * ELASTICITY;
-					// single_ball.box.x = sBall[i].box.x - single_ball.box.width;
-					// single_ball.box.y = sBall[i].box.y - single_ball.box.height;
-					//  single_ball.box.x =//-single_ball.box.x; // ball[i].box.x - single_ball.box.width;
+					if (CheckCollisionRecs(single_ball.box, sBall[i].box)) // check for colide with other balls if not itself
+					{
+						ResolveElasticCollision(&single_ball, &ball[i]);
+						// single_ball.speed.x = -single_ball.speed.x * ELASTICITY;
+						// single_ball.speed.y = -single_ball.speed.y * ELASTICITY;
+						// single_ball.box.x = sBall[i].box.x - single_ball.box.width;
+						// single_ball.box.y = sBall[i].box.y - single_ball.box.height;
+						//  single_ball.box.x =//-single_ball.box.x; // ball[i].box.x - single_ball.box.width;
+					}
 				}
 			}
+		} else { 
+			single_ball.position.x = 0; 
+			single_ball.position.y = 0;
 		}
 
 		return single_ball;

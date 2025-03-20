@@ -45,6 +45,7 @@ typedef struct Shot
 	bool active;
 	bool allowed;
 	int height;
+	int timer;
 	Rectangle box;
 } Shot;
 
@@ -82,7 +83,9 @@ static Character chungus = {0};
 static Character projectile = {0};
 
 static Ball ball[MAX_BALLS] = {0};
-static Ball sBall[(MAX_BALLS * 2)] = {0};
+//static Ball sBall[(MAX_BALLS * 2)] = {0};
+static Ball sBall[100] = {0};
+static int sBall_index = 0; // number of s balls
 
 static Shot shot = {0};
 
@@ -104,7 +107,8 @@ static void UpdateGame(void);	   // Update game (one frame)
 static void DrawGame(void);		   // Draw game (one frame)
 static void UnloadGame(void);	   // Unload game
 static void UpdateDrawFrame(void); // Update and Draw (one frame)
-void hitLargeBall(Ball *ball);
+void HitLargeBall(Ball *ball);
+void CreateNewBall(Ball *ball, char type);
 void ResolveElasticCollision(Ball *b1, Ball *b2);
 void KeyPressHandler(void);
 void GameOverState(void);
@@ -167,6 +171,7 @@ void updateSprite(Character * character);
 		shot.box = (Rectangle){0, 0, 0, 0};
 		shot.height = 0;
 		shot.allowed = true;
+		shot.timer = 0;
 
 		//----BALL----- Init big balls
 		for (int i = 0; i < MAX_BALLS; i++)
@@ -182,7 +187,7 @@ void updateSprite(Character * character);
 			ball[i].active = true;
 		}
 
-		if (true)
+		if (false)
 		{ //----sBALL----- Init small balls
 			for (int i = 0; i < (MAX_BALLS * 2); i++)
 			{
@@ -279,29 +284,32 @@ void updateSprite(Character * character);
 	void UpdateProjectile()
 	{
 		// -----SHOT UPDATE--------
-		if (shot.active == true)
+		if (shot.timer < 1000)
 		{
-			if (shot.allowed == true)
+			if (shot.active == true)
 			{
-				shot.starting = (Vector2){chungus.position.x + 70, chungus.position.y + 140};
-				projectile.position.x = chungus.position.x + 57;
-				projectile.position.y = chungus.position.y + 120;
+				if (shot.allowed == true)
+				{
+					shot.starting = (Vector2){chungus.position.x + 70, chungus.position.y + 140};
+					projectile.position.x = chungus.position.x + 57;
+					projectile.position.y = chungus.position.y + 120;
+				}
+				shot.allowed = false;
+				shot.height += 7.0f;
 			}
-			shot.allowed = false;
-			shot.height += 7.0f;
-		}
 
-		if (shot.height > 720)
-		{
-			shot.allowed = true;
-			shot.active = false;
-			shot.height = 0;
-		}
+			if (shot.height > 720)
+			{
+				shot.allowed = true;
+				shot.active = false;
+				shot.height = 0;
+			}
 
-		// ------- Projectile Update -------
-		shot.box = (Rectangle){shot.starting.x, shot.starting.y - shot.height, 7, shot.height};
-		projectile.box = (Rectangle){projectile.position.x, projectile.position.y, projectile.texture.width, projectile.texture.height};
-		projectile.position.y -= 7.0f;
+			// ------- Projectile Update -------
+			shot.box = (Rectangle){shot.starting.x, shot.starting.y - shot.height, 7, shot.height};
+			projectile.box = (Rectangle){projectile.position.x, projectile.position.y, projectile.texture.width, projectile.texture.height};
+			projectile.position.y -= 7.0f;
+		}
 	}
 
 	void CheckBallProjectileCollision()
@@ -310,15 +318,8 @@ void updateSprite(Character * character);
 		{
 			if (CheckCollisionRecs(projectile.box, ball[i].box) || CheckCollisionRecs(shot.box, ball[i].box))
 			{
-				//ball[i].active = false;
-				ball[i].collision = true;
-				projectile.collision = true;
-				ball[i].box = (Rectangle){0, 0, ball[i].size, ball[i].size}; // put off screen
-				hitLargeBall(&ball[i]);
-				//ball[i].speed = (Vector2){GetRandomValue(-3, 3), GetRandomValue(-8, 0)};
-				//ball[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), ball[i].size, ball[i].size};
+				HitLargeBall(&ball[i]);
 			}
-
 		}
 
 		for (int i = 0; i <= MAX_BALLS * 2; i++)
@@ -328,26 +329,46 @@ void updateSprite(Character * character);
 				sBall[i].collision = true;
 				sBall[i].active = false;
 				projectile.collision = true;
-				sBall[i].box = (Rectangle){0, 0, ball[i].size, ball[i].size};
+				sBall[i].box = (Rectangle){-100, -100, sBall[i].size, sBall[i].size};
 				// sBall[i].speed = (Vector2){GetRandomValue(-3, 3), GetRandomValue(-8, 0)};
 				// sBall[i].box = (Rectangle){GetRandomValue(100, 1000), GetRandomValue(0, 400), sBall[i].size, sBall[i].size};
 			}
 		}
 	}
 
-	void hitLargeBall(Ball *ball){
+
+	// needs a global ball index each type of ball. 
+	// put in a type of ball and then get a new one to add to the ball array
+	void CreateNewBall(Ball *ball, char type)
+	{
+		if (type == 's')
+		{
+			sBall[sBall_index].size = BALL_SIZE / 2;
+			sBall[sBall_index].box = (Rectangle){ball->box.x, ball->box.y, sBall[sBall_index].size, sBall[sBall_index].size};
+			sBall[sBall_index].speed = (Vector2){(GetRandomValue(-VELOCITY, VELOCITY) + 1) / 2.3, GetRandomValue(-8, 0)}; // 4,-4
+			sBall[sBall_index].color = (Color){GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(0, 255), GetRandomValue(250, 255)};
+			sBall[sBall_index].id = sBall_index;
+			sBall[sBall_index].type = 's';
+			sBall[sBall_index].active = true;
+			printf("init small ball: \n");
+			sBall_index++; // increment sball index
+		}
+	}
+
+	void HitLargeBall(Ball *ball){
 		//1 large is hit. set the location of two small balls to be its locations. set upwards motion for them and delete the large ball. 
 		ball->active = false;
+
+		shot.active = false;
+		shot.timer++;
+		printf("shot timer: %d",shot.timer);
+
 		// 2. find center of the box and have two new boxes spring from it. 
-		sBall[0].active = true;
-		Vector2 new_small_ball_pos = {ball->position.x, ball->position.y};
-		sBall[0].box = (Rectangle){500, 500, sBall[0].size, sBall[0].size};
-		// for(int i = 0; i < MAX_BALLS * 2; i++){
-		// 	if(!sBall[i].active){
-		// 		sBall[i].active;
-		// 		sBall[i].box = (Rectangle){new_small_ball_pos.x, new_small_ball_pos.y, sBall[i].size, sBall[i].size};
-		// 	}
-		// }
+		CreateNewBall(ball, 's');
+		CreateNewBall(ball, 's');
+		ball->box = (Rectangle){-100, -100, ball->size, ball->size}; // put off screen
+
+		// reset shot
 
 	}
 
@@ -394,9 +415,6 @@ void updateSprite(Character * character);
 					if (CheckCollisionRecs(single_ball.box, ball[i].box)) // check for colide with other balls if not itself
 					{
 						ResolveElasticCollision(&single_ball, &ball[i]);
-						// single_ball.speed.x = -single_ball.speed.x * ELASTICITY;
-						// single_ball.speed.y = -single_ball.speed.y * ELASTICITY;
-						// single_ball.box.x =//-single_ball.box.x; // ball[i].box.x - single_ball.box.width;
 					}
 				}
 			}
@@ -409,11 +427,6 @@ void updateSprite(Character * character);
 					if (CheckCollisionRecs(single_ball.box, sBall[i].box)) // check for colide with other balls if not itself
 					{
 						ResolveElasticCollision(&single_ball, &ball[i]);
-						// single_ball.speed.x = -single_ball.speed.x * ELASTICITY;
-						// single_ball.speed.y = -single_ball.speed.y * ELASTICITY;
-						// single_ball.box.x = sBall[i].box.x - single_ball.box.width;
-						// single_ball.box.y = sBall[i].box.y - single_ball.box.height;
-						//  single_ball.box.x =//-single_ball.box.x; // ball[i].box.x - single_ball.box.width;
 					}
 				}
 			}
